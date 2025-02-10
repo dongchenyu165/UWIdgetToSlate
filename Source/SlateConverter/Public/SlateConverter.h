@@ -5,6 +5,7 @@
 #include "Modules/ModuleManager.h"
 
 class UWidgetBlueprint;
+class UWidgetTree;
 class FToolBarBuilder;
 class FMenuBuilder;
 
@@ -24,6 +25,7 @@ private:
 	void RegisterMenus();
 	void AddToolbarExtension(FToolBarBuilder& Builder);
 	static UWidgetBlueprint* GetCurrentlyEditedAssets();
+	static FString ConvertWidgetTreeToSlate(UWidgetTree* InWidgetTree);
 
 private:
 	TSharedPtr<class FUICommandList> PluginCommands;
