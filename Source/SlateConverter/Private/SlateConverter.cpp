@@ -12,7 +12,8 @@
 #include "Widgets/SWidget.h"
 #include "Framework/MultiBox/MultiBoxBuilder.h"
 #include "WidgetBlueprintEditor.h"
-// #include "EditorStyleSet.h"
+
+#include "Blueprint/WidgetTree.h"
 
 static const FName SlateConverterTabName("SlateConverter");
 
@@ -105,7 +106,7 @@ void FSlateConverterModule::AddToolbarExtension(FToolBarBuilder& Builder)
 void FSlateConverterModule::PluginButtonClicked()
 {
 	// Put your "OnButtonClicked" stuff here
-	UUserWidget* EditingUMG_Ptr = GetCurrentlyEditedAssets();
+	UWidgetBlueprint* EditingUMG_Ptr = GetCurrentlyEditedAssets();
 	if (!EditingUMG_Ptr)
 	{
 		FMessageDialog::Open(EAppMsgType::Ok, LOCTEXT("NoEditingUMG", "No UMG is currently being edited."));
