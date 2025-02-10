@@ -8,6 +8,7 @@
 #include "Modules/ModuleManager.h"
 #include "ToolMenus.h"
 #include "UMGEditorModule.h"
+#include "WidgetBlueprint.h"
 #include "Widgets/SWidget.h"
 #include "Framework/MultiBox/MultiBoxBuilder.h"
 #include "WidgetBlueprintEditor.h"
@@ -149,6 +150,45 @@ UUserWidget* FSlateConverterModule::GetCurrentlyEditedAssets()
 
 	return nullptr;
 }
+FString FSlateConverterModule::ConvertWidgetTreeToSlate(UWidgetTree* InWidgetTree)
+{
+	FString SlateCode;
+	if (!InWidgetTree)
+	{
+		return SlateCode;
+	}
+
+	InWidgetTree->RootWidget;
+
+	// 遍历 WidgetTree，生成 Slate 代码
+	InWidgetTree->ForEachWidget(
+		[InWidgetTree](UWidget* InWidgetInTree)
+		{
+			if (!InWidgetInTree)
+			{
+				return;
+			}
+
+			// 生成 Slate 代码
+			UE_LOG(LogTemp, Display, TEXT("Function:[%hs] Widget name: [%s] Slate name: [%s]"), __FUNCTION__, *InWidgetInTree->GetName(), *InWidgetInTree->TakeWidget()->GetTypeAsString());
+			int Depth = 0;
+			TObjectPtr<UWidget> WidgetParent = InWidgetInTree->GetParent();
+			if (!WidgetParent)
+			{
+				return;
+			}
+			while (WidgetParent != InWidgetTree->RootWidget)
+			{
+				WidgetParent = WidgetParent->GetParent();
+				Depth++;
+			}
+		}
+	);
+
+	return SlateCode;
+}
+
+
 #undef LOCTEXT_NAMESPACE
 
 IMPLEMENT_MODULE(FSlateConverterModule, SlateConverter)

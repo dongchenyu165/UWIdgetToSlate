@@ -4,6 +4,7 @@
 
 #include "Modules/ModuleManager.h"
 
+class UWidgetBlueprint;
 class FToolBarBuilder;
 class FMenuBuilder;
 
@@ -22,7 +23,7 @@ private:
 
 	void RegisterMenus();
 	void AddToolbarExtension(FToolBarBuilder& Builder);
-	static UUserWidget* GetCurrentlyEditedAssets();
+	static UWidgetBlueprint* GetCurrentlyEditedAssets();
 
 private:
 	TSharedPtr<class FUICommandList> PluginCommands;
