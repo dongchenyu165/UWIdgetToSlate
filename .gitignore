@@ -1,0 +1,21 @@
+# UE5 Plugin
+Binaries/
+Intermediate/
+Saved/
+
+# User-specific files
+*.suo
+*.user
+*.userprefs
+*.vcxproj*
+*.sln
+*.xccrashpoint
+
+# Backup & cache files
+*.log
+*.cache
+*.tmp
+DerivedDataCache/
+
+# VSCode settings
+.vscode/
