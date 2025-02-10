@@ -5,7 +5,6 @@
 #include "SlateConverterCommands.h"
 #include "Misc/MessageDialog.h"
 #include "ToolMenus.h"
-#include "Editor/EditorStyle/Public/EditorStyleSet.h"
 #include "Modules/ModuleManager.h"
 #include "ToolMenus.h"
 #include "UMGEditorModule.h"
@@ -98,7 +97,7 @@ void FSlateConverterModule::AddToolbarExtension(FToolBarBuilder& Builder)
 		NAME_None,
 		LOCTEXT("MyButton_Label", "My Button"),
 		LOCTEXT("MyButton_Tooltip", "点击执行自定义操作"),
-		FSlateIcon(FEditorStyle::GetStyleSetName(), "LevelEditor.GameSettings") // 此处可换成你需要的图标
+		FSlateIcon(FAppStyle::GetAppStyleSetName(), "LevelEditor.GameSettings") // 此处可换成你需要的图标
 	);
 }
 
