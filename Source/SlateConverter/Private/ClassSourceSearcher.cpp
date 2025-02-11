@@ -124,6 +124,62 @@ bool FClassSourceSearcher::LoadMapsFromJsonFile(const FString& FilePath)
 	return true;
 }
 
+
+void FClassSourceSearcher::BuildClassSourceFilesInfoCacheMap()
+{
+
+}
+
+void FClassSourceSearcher::BuildModulePathCacheMap()
+{
+	if (ModulePathCacheMap.Num() == 0)
+	{
+		LoadMapsFromJsonFile(FPaths::ProjectSavedDir() / TEXT("ClassSourceSearcherCache.json"));
+		return;
+	}
+	
+	// 候选根目录数组
+	TArray<FString> CandidateRoots;
+#if ENGINE_MAJOR_VERSION >= 5
+	FString UserProjectDir = FPaths::ProjectDir();
+#else
+	FString UserProjectDir = FPaths::GameDir();
+#endif
+	FString EngineRootDir = FPaths::ConvertRelativePathToFull(FPaths::EngineDir());
+
+	// 1. 项目源码模块： [ProjectDir]/Source/[ModuleName]
+	CandidateRoots.Add(FPaths::Combine(UserProjectDir, TEXT("Source")));
+	// 2. 引擎源码模块： [EngineDir]/Source/[ModuleName]
+	CandidateRoots.Add(FPaths::Combine(EngineRootDir, TEXT("Source")));
+	// 3. 项目插件：遍历 [ProjectDir]/Plugins 下的所有插件
+	CandidateRoots.Add(FPaths::Combine(UserProjectDir, TEXT("Plugins")));
+	// 4. 引擎插件：遍历 [EngineDir]/Plugins 下的所有插件
+	CandidateRoots.Add(FPaths::Combine(EngineRootDir, TEXT("Plugins")));
+
+	for (FString CandidatePath : CandidateRoots)
+	{
+		IFileManager::Get().IterateDirectoryRecursively(
+			*CandidatePath, [&](const TCHAR* FilenameOrDirectory, bool bIsDirectory) -> bool
+			{
+				if (bIsDirectory)
+				{
+					return true; // continue iterating
+				}
+
+				const FString FileName = FPaths::GetPathLeaf(FilenameOrDirectory);
+				if (FileName.Contains(TEXT("Build.cs")))
+				{
+					FString ModuleBasePath = FPaths::GetPath(FilenameOrDirectory);
+					FString ModuleName = FPaths::GetPathLeaf(ModuleBasePath);
+					ModulePathCacheMap.Add(ModuleName, ModuleBasePath);
+				}
+				return true;
+			});
+	}
+
+	SaveMapsToJsonFile(FPaths::ProjectSavedDir() / TEXT("ClassSourceSearcherCache.json"));
+}
+
 TArray<FString> FindFilesInDirectory(const FString& Directory, const FString& FileExtension)
 {
 	TArray<FString> FoundFiles;
@@ -324,9 +380,6 @@ bool GetUClassSourceFilesByUsers(UClass* InClass, FString& OutHeaderPath, FStrin
 }
 
 
-// bool FindModuleBasePath(const FString& InModuleName, FString& OutModuleBasePath)
-
-
 /**
  * 尝试在项目源码、引擎源码、项目插件、引擎插件目录中查找模块的基本路径
  * @param InModuleName       模块名称（例如"MyModule"），要求与模块构建规则中定义的名称一致
@@ -341,44 +394,7 @@ bool FClassSourceSearcher::FindModuleBasePath(const FString& InModuleName, FStri
 		return true;
 	}
 
-	// 候选根目录数组
-	TArray<FString> CandidateRoots;
-#if ENGINE_MAJOR_VERSION >= 5
-	FString UserProjectDir = FPaths::ProjectDir();
-#else
-	FString UserProjectDir = FPaths::GameDir();
-#endif
-	FString EngineRootDir = FPaths::ConvertRelativePathToFull(FPaths::EngineDir());
-
-	// 1. 项目源码模块： [ProjectDir]/Source/[ModuleName]
-	CandidateRoots.Add(FPaths::Combine(UserProjectDir, TEXT("Source")));
-	// 2. 引擎源码模块： [EngineDir]/Source/[ModuleName]
-	CandidateRoots.Add(FPaths::Combine(EngineRootDir, TEXT("Source")));
-	// 3. 项目插件：遍历 [ProjectDir]/Plugins 下的所有插件
-	CandidateRoots.Add(FPaths::Combine(UserProjectDir, TEXT("Plugins")));
-	// 4. 引擎插件：遍历 [EngineDir]/Plugins 下的所有插件
-	CandidateRoots.Add(FPaths::Combine(EngineRootDir, TEXT("Plugins")));
-
-	for (FString CandidatePath : CandidateRoots)
-	{
-		IFileManager::Get().IterateDirectoryRecursively(
-			*CandidatePath, [&](const TCHAR* FilenameOrDirectory, bool bIsDirectory) -> bool
-			{
-				if (bIsDirectory)
-				{
-					return true; // continue iterating
-				}
-
-				const FString FileName = FPaths::GetPathLeaf(FilenameOrDirectory);
-				if (FileName.Contains(TEXT("Build.cs")))
-				{
-					FString ModuleBasePath = FPaths::GetPath(FilenameOrDirectory);
-					FString ModuleName = FPaths::GetPathLeaf(ModuleBasePath);
-					ModulePathCacheMap.Add(ModuleName, ModuleBasePath);
-				}
-				return true;
-			});
-	}
+	BuildModulePathCacheMap();
 
 	if (!ModulePathCacheMap.Contains(InModuleName))
 	{
