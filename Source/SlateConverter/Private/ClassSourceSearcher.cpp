@@ -1,4 +1,4 @@
-﻿#include "ClassSourceSearcher.h"
+#include "ClassSourceSearcher.h"
 
 
 TArray<FString> FindFilesInDirectory(const FString& Directory, const FString& FileExtension)
@@ -137,6 +137,7 @@ bool GetUClassSourceFiles(UClass* InClass, FString& OutHeaderPath, FString& OutS
 		UE_LOG(LogTemp, Warning, TEXT("Invalid UClass pointer."));
 		return false;
 	}
+FString ModuleName;
 
 	// Get the module's name
 	FString AbsoluteModuleDLL_Path = GetUClassModuleDllPath(InClass);
@@ -144,8 +145,8 @@ bool GetUClassSourceFiles(UClass* InClass, FString& OutHeaderPath, FString& OutS
 
 	// Get Engine Source Directory
 	FString EngineSourceDir = FPaths::EngineSourceDir();
-	FPaths::ProjectPluginsDir();
-	FPaths::ProjectDir() / TEXT("Source");
+// FPaths::ProjectPluginsDir();
+// FPaths::ProjectDir() / TEXT("Source");
 
 	// Find the module's source folder path
 	FString ModuleAbsolutePath = EngineSourceDir / ModuleName;
@@ -208,6 +209,7 @@ bool GetUClassSourceFiles(UClass* InClass, FString& OutHeaderPath, FString& OutS
 
 bool GetUClassSourceFilesByUsers(UClass* InClass, FString& OutHeaderPath, FString& OutSourcePath)
 {
+return true;
 }
 
 
@@ -249,7 +251,7 @@ bool FClassSourceSearcher::FindModuleBasePath(const FString& InModuleName, FStri
 	for (FString CandidatePath : CandidateRoots)
 	{
 		IFileManager::Get().IterateDirectoryRecursively(
-			*CandidatePath, [&, this](const TCHAR* FilenameOrDirectory, bool bIsDirectory) -> bool
+			*CandidatePath, [&](const TCHAR* FilenameOrDirectory, bool bIsDirectory) -> bool
 			{
 				if (bIsDirectory)
 				{
@@ -279,6 +281,7 @@ bool FClassSourceSearcher::FindModuleBasePath(const FString& InModuleName, FStri
 
 bool FClassSourceSearcher::FindCPPSourceFile(const FString& InModuleName, const FString& InUClassModuleRelativePath)
 {
+	return true;
 }
 
 FString FClassSourceSearcher::GetUClassModuleName(UClass* InClass)
@@ -328,7 +331,7 @@ bool FClassSourceSearcher::FindUClassSourceFiles(UClass* InClass, FString& OutHe
 	OutHeaderPath = ModuleBasePath / ClassHeaderModuleRelativePath;
 	if (!FPaths::FileExists(OutHeaderPath))
 	{
-		ensureMsgf(TEXT("Header file for class '%s' not found in module '%s'."), *InClass->GetName(), *ModuleName);
+		ensureMsgf(false, TEXT("Header file for class '%s' not found in module '%s'."), *InClass->GetName(), *ModuleName);
 		OutHeaderPath = "";
 		OutSourcePath = "";
 		return false;

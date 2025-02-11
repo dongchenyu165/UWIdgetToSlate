@@ -1,4 +1,4 @@
-﻿#pragma once
+#pragma once
 
 struct FClassSourceFilesInfo
 {
@@ -17,8 +17,8 @@ public:
 	static bool FindUClassSourceFiles(UClass* InClass, FString& OutHeaderPath, FString& OutSourcePath);
 
 private:
-	static TMap<FString /* ModuleName */, FString /* ModuleBasePath */> ModulePathCacheMap;
+inline 	static TMap<FString /* ModuleName */, FString /* ModuleBasePath */> ModulePathCacheMap;
 
 	// Cache[MODULE_NAME][UCLASS_RELATIVE_PATH]
-	static TMap<UClass*, FClassSourceFilesInfo>	ClassSourceFilesInfoCacheMap;
+inline 	static TMap<UClass*, FClassSourceFilesInfo>	ClassSourceFilesInfoCacheMap;
 };
