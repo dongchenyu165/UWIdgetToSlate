@@ -224,7 +224,7 @@ return true;
  */
 bool FClassSourceSearcher::FindModuleBasePath(const FString& InModuleName, FString& OutModuleBasePath)
 {
-	if (!ModulePathCacheMap.Contains(InModuleName))
+	if (ModulePathCacheMap.Contains(InModuleName))
 	{
 		OutModuleBasePath = ModulePathCacheMap[InModuleName];
 		return true;
