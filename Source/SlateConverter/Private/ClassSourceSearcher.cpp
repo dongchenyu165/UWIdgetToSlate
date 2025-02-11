@@ -240,18 +240,6 @@ FString GetUClassModuleDllPath(const UClass* InClass)
 	return FPaths::ConvertRelativePathToFull(ModuleDLL_Dir);
 }
 
-FString MakeEngineSourcePath(const FString& InRelativePath)
-{
-	// EngineSourceDir = EngineSourceDir.Replace(TEXT("/Binaries/"), TEXT("/Source/"));
-	// EngineSourceDir = EngineSourceDir.Replace(TEXT("/Plugins/"), TEXT("/Source/"));
-	// EngineSourceDir = EngineSourceDir.Replace(TEXT("/Engine/"), TEXT("/Engine/Source/"));
-	// const int SourceIdx = EngineSourceDir.Find(TEXT("/Source/"), ESearchCase::CaseSensitive, ESearchDir::FromEnd);
-	// FString PlatformStr = EngineSourceDir.Right(EngineSourceDir.Len() - SourceIdx - 8);
-	// EngineSourceDir = EngineSourceDir.Left(SourceIdx);
-	FString EngineSourceDir = FPaths::EngineSourceDir();
-	FString EngineSourcePath = EngineSourceDir / InRelativePath;
-	return EngineSourcePath;
-}
 
 bool GetUClassSourceFiles(UClass* InClass, FString& OutHeaderPath, FString& OutSourcePath)
 {
