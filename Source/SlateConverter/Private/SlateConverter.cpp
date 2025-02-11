@@ -140,7 +140,7 @@ UWidgetBlueprint* FSlateConverterModule::GetCurrentlyEditedAssets()
 
 	for (UObject* Asset : EditedAssets)
 	{
-		if (!Asset || Asset->GetClass() != UUserWidget::StaticClass())
+		if (!Asset || Asset->GetClass() != UWidgetBlueprint::StaticClass())
 		{
 			continue;
 		}
@@ -148,7 +148,23 @@ UWidgetBlueprint* FSlateConverterModule::GetCurrentlyEditedAssets()
 		{
 			// 打印正在编辑的资产名称
 			UE_LOG(LogTemp, Log, TEXT("Currently Editing Asset: %s"), *Asset->GetName());
-
+			UWidgetBlueprint* BP = Cast<UWidgetBlueprint>(Asset);
+			IAssetEditorInstance* EditorInstances = AssetEditorSubsystem->FindEditorForAsset(BP, true);
+			FWidgetBlueprintEditor* UMG_BP_Editor = static_cast<FWidgetBlueprintEditor*>(EditorInstances);
+			if (UMG_BP_Editor)
+			{
+				UE_LOG(LogTemp, Log, TEXT("UMG_BP_Editor is valid"));
+				auto Widgets = UMG_BP_Editor->GetSelectedWidgets();
+				for (FWidgetReference Widget : Widgets)
+				{
+					UE_LOG(LogTemp, Log, TEXT("Selecting Widget name: %s"), *(Widget.GetPreview()->GetName()));
+				}
+			}
+			else
+			{
+				UE_LOG(LogTemp, Log, TEXT("UMG_BP_Editor is invalid"));
+			}
+			ConvertWidgetTreeToSlate(BP->WidgetTree);
 			return Cast<UWidgetBlueprint>(Asset);
 		}
 	}
