@@ -1,4 +1,4 @@
-﻿#pragma once
+#pragma once
 
 struct FClassSourceFilesInfo
 {
@@ -9,6 +9,7 @@ struct FClassSourceFilesInfo
 
 class FClassSourceSearcher
 {
+	using FFilesInfoCacheMapType = TMap<UClass*, FClassSourceFilesInfo>;
 	static bool FindModuleBasePath(const FString& InModuleName, FString& OutModuleBasePath);
 	static bool FindCPPSourceFile(const FString& InModuleName, const FString& InUClassModuleRelativePath);
 
@@ -20,5 +21,5 @@ private:
 	inline static TMap<FString /* ModuleName */, FString /* ModuleBasePath */> ModulePathCacheMap;
 
 	// Cache[MODULE_NAME][UCLASS_RELATIVE_PATH]
-	inline static TMap<UClass*, FClassSourceFilesInfo> ClassSourceFilesInfoCacheMap;
+	inline static FFilesInfoCacheMapType ClassSourceFilesInfoCacheMap;
 };
