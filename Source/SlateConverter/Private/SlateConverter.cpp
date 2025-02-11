@@ -14,12 +14,14 @@
 #include "Widgets/SWidget.h"
 #include "Framework/MultiBox/MultiBoxBuilder.h"
 #include "WidgetBlueprintEditor.h"
+#include "WidgetToSlate.h"
 
 #include "Blueprint/WidgetTree.h"
+// #include "Misc/Paths.h"
 
-static const FName SlateConverterTabName("SlateConverter");
 
 #define LOCTEXT_NAMESPACE "FSlateConverterModule"
+
 
 void FSlateConverterModule::StartupModule()
 {
@@ -119,7 +121,7 @@ void FSlateConverterModule::PluginButtonClicked()
 	
 }
 
-UUserWidget* FSlateConverterModule::GetCurrentlyEditedAssets()
+UWidgetBlueprint* FSlateConverterModule::GetCurrentlyEditedAssets()
 {
 	if (!GEditor)
 	{
@@ -147,12 +149,14 @@ UUserWidget* FSlateConverterModule::GetCurrentlyEditedAssets()
 			// 打印正在编辑的资产名称
 			UE_LOG(LogTemp, Log, TEXT("Currently Editing Asset: %s"), *Asset->GetName());
 
-			return Cast<UUserWidget>(Asset);
+			return Cast<UWidgetBlueprint>(Asset);
 		}
 	}
 
 	return nullptr;
 }
+
+
 FString FSlateConverterModule::ConvertWidgetTreeToSlate(UWidgetTree* InWidgetTree)
 {
 	FString SlateCode;
@@ -165,6 +169,8 @@ FString FSlateConverterModule::ConvertWidgetTreeToSlate(UWidgetTree* InWidgetTre
 	FString ClassHeaderPath, ClassSourcePath;
 	FClassSourceSearcher::FindUClassSourceFiles(InWidgetTree->RootWidget->GetClass(), ClassHeaderPath, ClassSourcePath);
 
+	// CompareUObjects(Cast<UStruct>(InWidgetTree->RootWidget.Get()), Cast<UStruct>(InWidgetTree->RootWidget->GetClass()->ClassDefaultObject.Get()));
+	// CompareUObjects(InWidgetTree->RootWidget, InWidgetTree->RootWidget->GetClass()->ClassDefaultObject);
 
 	// 遍历 WidgetTree，生成 Slate 代码
 	InWidgetTree->ForEachWidget(
@@ -176,7 +182,8 @@ FString FSlateConverterModule::ConvertWidgetTreeToSlate(UWidgetTree* InWidgetTre
 			}
 
 			// 生成 Slate 代码
-			UE_LOG(LogTemp, Display, TEXT("Function:[%hs] Widget name: [%s] Slate name: [%s]"), __FUNCTION__, *InWidgetInTree->GetName(), *InWidgetInTree->TakeWidget()->GetTypeAsString());
+			UE_LOG(LogTemp, Display, TEXT("Function:[%hs] Widget name: [%s] Slate name: [%s]"), __FUNCTION__,
+			       *InWidgetInTree->GetName(), *InWidgetInTree->TakeWidget()->GetTypeAsString());
 			int Depth = 0;
 			TObjectPtr<UWidget> WidgetParent = InWidgetInTree->GetParent();
 			if (!WidgetParent)
