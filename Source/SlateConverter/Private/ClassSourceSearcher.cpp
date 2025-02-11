@@ -6,12 +6,9 @@
 
 void FClassSourceFilesInfo::ToJson(TSharedPtr<FJsonObject>& JsonObject) const
 {
-	// UClass* ClassPtr;
-	// FString HeaderFilePath;
-	// FString SourceFilePath;
 	JsonObject->SetStringField(TEXT("ClassPtr"), ClassPtr->GetPathName());
 	JsonObject->SetStringField(TEXT("HeaderFilePath"), HeaderFilePath);
-	JsonObject->SetStringField(TEXT("HeaderFilePath"), HeaderFilePath);
+	JsonObject->SetStringField(TEXT("SourceFilePath"), SourceFilePath);
 }
 
 void FClassSourceFilesInfo::FromJson(TSharedPtr<FJsonObject> JsonObject)
