@@ -1,4 +1,4 @@
-#include "ClassSourceSearcher.h"
+﻿#include "ClassSourceSearcher.h"
 #include "Json.h"
 #include "JsonUtilities.h"
 #include "Misc/FileHelper.h"
