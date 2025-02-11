@@ -458,7 +458,8 @@ bool FClassSourceSearcher::FindUClassSourceFiles(UClass* InClass, FString& OutHe
 	OutHeaderPath = ModuleBasePath / ClassHeaderModuleRelativePath;
 	if (!FPaths::FileExists(OutHeaderPath))
 	{
-		ensureMsgf(false, TEXT("Header file for class '%s' not found in module '%s'."), *InClass->GetName(), *ModuleName);
+		ensureMsgf(false, TEXT("Header file for class '%s' not found in module '%s'."), *InClass->GetName(),
+		           *ModuleName);
 		OutHeaderPath = "";
 		OutSourcePath = "";
 		return false;
