@@ -1,4 +1,4 @@
-#include "ClassSourceSearcher.h"
+﻿#include "ClassSourceSearcher.h"
 
 
 TArray<FString> FindFilesInDirectory(const FString& Directory, const FString& FileExtension)
@@ -137,7 +137,7 @@ bool GetUClassSourceFiles(UClass* InClass, FString& OutHeaderPath, FString& OutS
 		UE_LOG(LogTemp, Warning, TEXT("Invalid UClass pointer."));
 		return false;
 	}
-FString ModuleName;
+	FString ModuleName;
 
 	// Get the module's name
 	FString AbsoluteModuleDLL_Path = GetUClassModuleDllPath(InClass);
@@ -145,8 +145,8 @@ FString ModuleName;
 
 	// Get Engine Source Directory
 	FString EngineSourceDir = FPaths::EngineSourceDir();
-// FPaths::ProjectPluginsDir();
-// FPaths::ProjectDir() / TEXT("Source");
+	// FPaths::ProjectPluginsDir();
+	// FPaths::ProjectDir() / TEXT("Source");
 
 	// Find the module's source folder path
 	FString ModuleAbsolutePath = EngineSourceDir / ModuleName;
@@ -209,7 +209,7 @@ FString ModuleName;
 
 bool GetUClassSourceFilesByUsers(UClass* InClass, FString& OutHeaderPath, FString& OutSourcePath)
 {
-return true;
+	return true;
 }
 
 
