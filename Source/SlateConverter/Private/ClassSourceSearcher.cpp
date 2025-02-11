@@ -1,5 +1,131 @@
-﻿#include "ClassSourceSearcher.h"
+#include "ClassSourceSearcher.h"
+#include "Json.h"
+#include "JsonUtilities.h"
+#include "Misc/FileHelper.h"
+#include "UObject/ConstructorHelpers.h"
 
+void FClassSourceFilesInfo::ToJson(TSharedPtr<FJsonObject>& JsonObject) const
+{
+	// UClass* ClassPtr;
+	// FString HeaderFilePath;
+	// FString SourceFilePath;
+	JsonObject->SetStringField(TEXT("ClassPtr"), ClassPtr->GetPathName());
+	JsonObject->SetStringField(TEXT("HeaderFilePath"), HeaderFilePath);
+	JsonObject->SetStringField(TEXT("HeaderFilePath"), HeaderFilePath);
+}
+
+void FClassSourceFilesInfo::FromJson(TSharedPtr<FJsonObject> JsonObject)
+{
+	FString ClassFullPathName = JsonObject->GetStringField(TEXT("ClassPtr"));
+	StaticLoadClass(ClassPtr, nullptr, *ClassFullPathName);
+	HeaderFilePath = JsonObject->GetStringField(TEXT("HeaderFilePath"));
+	SourceFilePath = JsonObject->GetStringField(TEXT("SourceFilePath"));
+}
+
+// 保存 TMap<UClass*, FClassSourceFilesInfo> 和 TMap<FString, FString> 到 JSON 文件
+bool FClassSourceSearcher::SaveMapsToJsonFile(const FString& FilePath)
+{
+	// 创建根 JSON 对象
+	TSharedPtr<FJsonObject> RootObject = MakeShareable(new FJsonObject());
+
+	// 处理以 UClass* 为键的 Map
+	TSharedPtr<FJsonObject> ClassMapJson = MakeShareable(new FJsonObject());
+	for (const TPair<UClass*, FClassSourceFilesInfo>& Pair : ClassSourceFilesInfoCacheMap)
+	{
+		UClass* ClassKey = Pair.Key;
+		const FClassSourceFilesInfo& ClassFileInfoValue = Pair.Value;
+
+		if (ClassKey)
+		{
+			// 使用 UClass 的路径名作为键（保证唯一性）
+			FString KeyString = ClassKey->GetPathName();
+
+			// 将 FClassSourceFilesInfo 序列化到一个 Json 对象中
+			TSharedPtr<FJsonObject> ClassFileInfoJson = MakeShareable(new FJsonObject());
+			ClassFileInfoValue.ToJson(ClassFileInfoJson);
+
+			// 添加到 ClassMapJson 中
+			ClassMapJson->SetObjectField(KeyString, ClassFileInfoJson);
+		}
+	}
+	// 将 ClassMapJson 添加到根对象中
+	RootObject->SetObjectField(TEXT("ClassSourceFilesInfoCacheMap"), ClassMapJson);
+
+	// 处理以 FString 为键的 Map
+	TSharedPtr<FJsonObject> StringMapJson = MakeShareable(new FJsonObject());
+	for (const TPair<FString, FString>& Pair : ModulePathCacheMap)
+	{
+		StringMapJson->SetStringField(Pair.Key, Pair.Value);
+	}
+	RootObject->SetObjectField(TEXT("ModulePathCacheMap"), StringMapJson);
+
+	// 将根对象序列化为字符串
+	FString OutputString;
+	TSharedRef<TJsonWriter<>> Writer = TJsonWriterFactory<>::Create(&OutputString);
+	if (!FJsonSerializer::Serialize(RootObject.ToSharedRef(), Writer))
+	{
+		return false;
+	}
+
+	// 写入到文件
+	return FFileHelper::SaveStringToFile(OutputString, *FilePath);
+}
+
+// 从 JSON 文件中读取 TMap<UClass*, FClassSourceFilesInfo> 和 TMap<FString, FString>
+bool FClassSourceSearcher::LoadMapsFromJsonFile(const FString& FilePath)
+{
+	FString InputString;
+	if (!FFileHelper::LoadFileToString(InputString, *FilePath))
+	{
+		return false;
+	}
+
+	TSharedPtr<FJsonObject> RootObject;
+	TSharedRef<TJsonReader<>> Reader = TJsonReaderFactory<>::Create(InputString);
+	if (!FJsonSerializer::Deserialize(Reader, RootObject) || !RootObject.IsValid())
+	{
+		return false;
+	}
+
+	// 读取字符串 Map
+	ModulePathCacheMap.Empty();
+	TSharedPtr<FJsonObject> StringMapJson = RootObject->GetObjectField(TEXT("ModulePathCacheMap"));
+	if (StringMapJson.IsValid())
+	{
+		for (const auto& Pair : StringMapJson->Values)
+		{
+			FString Key = Pair.Key;
+			FString Value;
+			if (Pair.Value.IsValid() && Pair.Value->TryGetString(Value))
+			{
+				ModulePathCacheMap.Add(Key, Value);
+			}
+		}
+	}
+
+	// 读取 UClass* Map
+	ClassSourceFilesInfoCacheMap.Empty();
+	TSharedPtr<FJsonObject> ClassMapJson = RootObject->GetObjectField(TEXT("ClassSourceFilesInfoCacheMap"));
+	if (ClassMapJson.IsValid())
+	{
+		for (const auto& Pair : ClassMapJson->Values)
+		{
+			// 键为 UClass 的路径名
+			FString ClassPath = Pair.Key;
+			// 根据路径加载 UClass 对象
+			UClass* ClassKey = StaticLoadClass(UObject::StaticClass(), nullptr, *ClassPath);
+			if (ClassKey)
+			{
+				TSharedPtr<FJsonObject> ClassFileInfoJson = Pair.Value->AsObject();
+				FClassSourceFilesInfo ClassFileInfoValue;
+				ClassFileInfoValue.FromJson(ClassFileInfoJson);
+				ClassSourceFilesInfoCacheMap.Add(ClassKey, ClassFileInfoValue);
+			}
+		}
+	}
+
+	return true;
+}
 
 TArray<FString> FindFilesInDirectory(const FString& Directory, const FString& FileExtension)
 {
