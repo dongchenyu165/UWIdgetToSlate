@@ -1,5 +1,4 @@
-﻿#include "F:\EpicGames\SelfCompiled_UE5\Engine\Intermediate\Build\Win64\x64\UnrealEditorGPF\Development\UnrealEd\SharedPCH.UnrealEd.Project.ValApi.Cpp20.h"
-#include "PropertyCopyer_BPWidgetToSlate.h"
+﻿#include "PropertyCopyer_BPWidgetToSlate.h"
 
 #include "Components/Widget.h"
 
