@@ -7,7 +7,7 @@ public class SlateConverter : ModuleRules
 	public SlateConverter(ReadOnlyTargetRules Target) : base(Target)
 	{
 		PCHUsage = ModuleRules.PCHUsageMode.UseExplicitOrSharedPCHs;
-		
+		OptimizeCode = CodeOptimization.Never;
 		PublicIncludePaths.AddRange(
 			new string[] {
 				// ... add public include paths required here ...
