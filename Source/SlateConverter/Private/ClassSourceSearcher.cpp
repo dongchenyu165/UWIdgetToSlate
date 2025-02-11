@@ -237,12 +237,12 @@ bool FClassSourceSearcher::FindModuleBasePath(const FString& InModuleName, FStri
 #else
 	FString UserProjectDir = FPaths::GameDir();
 #endif
-	FString EngineRootDir = FPaths::EngineDir();
+	FString EngineRootDir = FPaths::ConvertRelativePathToFull(FPaths::EngineDir());
 
 	// 1. 项目源码模块： [ProjectDir]/Source/[ModuleName]
-	CandidateRoots.Add(FPaths::Combine(UserProjectDir, TEXT("Source"), InModuleName));
+	CandidateRoots.Add(FPaths::Combine(UserProjectDir, TEXT("Source")));
 	// 2. 引擎源码模块： [EngineDir]/Source/[ModuleName]
-	CandidateRoots.Add(FPaths::Combine(EngineRootDir, TEXT("Source"), InModuleName));
+	CandidateRoots.Add(FPaths::Combine(EngineRootDir, TEXT("Source")));
 	// 3. 项目插件：遍历 [ProjectDir]/Plugins 下的所有插件
 	CandidateRoots.Add(FPaths::Combine(UserProjectDir, TEXT("Plugins")));
 	// 4. 引擎插件：遍历 [EngineDir]/Plugins 下的所有插件
