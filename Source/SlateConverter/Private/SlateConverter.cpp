@@ -1,6 +1,8 @@
 // Copyright Epic Games, Inc. All Rights Reserved.
 
 #include "SlateConverter.h"
+
+#include "ClassSourceSearcher.h"
 #include "SlateConverterStyle.h"
 #include "SlateConverterCommands.h"
 #include "Misc/MessageDialog.h"
@@ -159,7 +161,10 @@ FString FSlateConverterModule::ConvertWidgetTreeToSlate(UWidgetTree* InWidgetTre
 		return SlateCode;
 	}
 
-	InWidgetTree->RootWidget;
+	FString ClassModuleName = FClassSourceSearcher::GetUClassModuleName(InWidgetTree->RootWidget->GetClass());
+	FString ClassHeaderPath, ClassSourcePath;
+	FClassSourceSearcher::FindUClassSourceFiles(InWidgetTree->RootWidget->GetClass(), ClassHeaderPath, ClassSourcePath);
+
 
 	// 遍历 WidgetTree，生成 Slate 代码
 	InWidgetTree->ForEachWidget(
