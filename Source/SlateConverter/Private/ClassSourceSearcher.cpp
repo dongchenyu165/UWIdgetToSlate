@@ -472,6 +472,7 @@ bool FClassSourceSearcher::FindUClassSourceFiles(UClass* InClass, FString& OutHe
 	if (FPaths::FileExists(OutSourcePath))
 	{
 		ClassSourceFilesInfoCacheMap.Add(InClass, {InClass, OutHeaderPath, OutSourcePath});
+		SaveMapsToJsonFile(FPaths::ProjectSavedDir() / TEXT("ClassSourceSearcherCache.json"));
 		return true;
 	}
 
@@ -499,7 +500,7 @@ bool FClassSourceSearcher::FindUClassSourceFiles(UClass* InClass, FString& OutHe
 		OutSourcePath = "";
 		return false;
 	}
-
 	ClassSourceFilesInfoCacheMap.Add(InClass, {InClass, OutHeaderPath, OutSourcePath});
+	SaveMapsToJsonFile(FPaths::ProjectSavedDir() / TEXT("ClassSourceSearcherCache.json"));
 	return true;
 }
