@@ -1,4 +1,4 @@
-#pragma once
+﻿#pragma once
 
 struct FClassSourceFilesInfo
 {
@@ -20,7 +20,7 @@ class FClassSourceSearcher
 	static bool FindCPPSourceFile(const FString& InModuleName, const FString& InUClassModuleRelativePath);
 	static bool LoadMapsFromJsonFile(const FString& FilePath);
 	static bool SaveMapsToJsonFile(const FString& FilePath);
-
+	static void BuildClassSourceFilesInfoCacheMap();
 	static void BuildModulePathCacheMap();
 public:
 	static FString GetUClassModuleName(UClass* InClass);
