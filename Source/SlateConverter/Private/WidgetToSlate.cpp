@@ -96,6 +96,7 @@ void CompareNormalProperty(FProperty* InProperty, void* ObjectA, void* ObjectB, 
 			// UE_LOG(LogTemp, Display, TEXT("NOEQUAL == Property '%s' differs: A = %d, B = %d"),
 			// *InProperty->GetName(), ValueA, ValueB);
 			UE_LOG(LogTemp, Display, TEXT("NOEQUAL == Property '%s' differs: A = %s, B = %s"),
+			       *InProperty->GetName(), *ValueA, *ValueB);
 			OnDifferenceFound(InProperty, ObjectA, ObjectB);
 	// 字符串型
 	else if (FStrProperty* StringProperty = CastField<FStrProperty>(InProperty))
@@ -267,9 +268,9 @@ void DEP()
 			if (ValueA != ValueB)
 			{
 				UE_LOG(LogTemp, Display, TEXT("NOEQUAL == Property '%s' differs: A = %s, B = %s"),
-				       *Property->GetName(),
-				       ValueA ? *ValueA->GetName() : TEXT("null"),
-				       ValueB ? *ValueB->GetName() : TEXT("null"));
+					   *Property->GetName(),
+					   ValueA ? *ValueA->GetName() : TEXT("null"),
+					   ValueB ? *ValueB->GetName() : TEXT("null"));
 			}
 		}
 		// 类引用
@@ -281,9 +282,9 @@ void DEP()
 			if (ValueA != ValueB)
 			{
 				UE_LOG(LogTemp, Display, TEXT("NOEQUAL == Property '%s' differs: A = %s, B = %s"),
-				       *Property->GetName(),
-				       ValueA ? *ValueA->GetName() : TEXT("null"),
-				       ValueB ? *ValueB->GetName() : TEXT("null"));
+					   *Property->GetName(),
+					   ValueA ? *ValueA->GetName() : TEXT("null"),
+					   ValueB ? *ValueB->GetName() : TEXT("null"));
 			}
 		}
 		// 数组
@@ -298,7 +299,7 @@ void DEP()
 			if (NumA != NumB)
 			{
 				UE_LOG(LogTemp, Display, TEXT("NOEQUAL == Property '%s' differs in array size: A = %d, B = %d"),
-				       *Property->GetName(), NumA, NumB);
+					   *Property->GetName(), NumA, NumB);
 				continue;
 			}
 
@@ -306,14 +307,14 @@ void DEP()
 			{
 				FString ElementA, ElementB;
 				ArrayProperty->Inner->ExportTextItem(ElementA, ArrayHelperA.GetRawPtr(Index), nullptr, nullptr,
-				                                     PPF_None);
+													 PPF_None);
 				ArrayProperty->Inner->ExportTextItem(ElementB, ArrayHelperB.GetRawPtr(Index), nullptr, nullptr,
-				                                     PPF_None);
+													 PPF_None);
 
 				if (ElementA != ElementB)
 				{
 					UE_LOG(LogTemp, Display, TEXT("NOEQUAL == Property '%s' differs at array index %d: A = %s, B = %s"),
-					       *Property->GetName(), Index, *ElementA, *ElementB);
+						   *Property->GetName(), Index, *ElementA, *ElementB);
 				}
 			}
 		}
