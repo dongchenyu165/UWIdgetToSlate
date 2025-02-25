@@ -1,4 +1,4 @@
-﻿#pragma once
+#pragma once
 
 struct FClassSourceFilesInfo
 {
@@ -6,10 +6,10 @@ struct FClassSourceFilesInfo
 	FString HeaderFilePath;
 	FString SourceFilePath;
 
-	// 将 FMyStruct 序列化到 Json 对象中
+	// 将 FClassSourceFilesInfo 序列化到 Json 对象中
 	void ToJson(TSharedPtr<FJsonObject>& JsonObject) const;
 
-	// 从 Json 对象中反序列化 FMyStruct
+	// 从 Json 对象中反序列化 FClassSourceFilesInfo
 	void FromJson(TSharedPtr<FJsonObject> JsonObject);
 };
 
