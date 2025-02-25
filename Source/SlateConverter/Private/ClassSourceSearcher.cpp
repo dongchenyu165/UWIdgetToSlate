@@ -1,6 +1,7 @@
-﻿#include "ClassSourceSearcher.h"
+#include "ClassSourceSearcher.h"
 #include "Json.h"
 #include "JsonUtilities.h"
+#include "Components/Widget.h"
 #include "Misc/FileHelper.h"
 #include "UObject/ConstructorHelpers.h"
 
@@ -14,7 +15,7 @@ void FClassSourceFilesInfo::ToJson(TSharedPtr<FJsonObject>& JsonObject) const
 void FClassSourceFilesInfo::FromJson(TSharedPtr<FJsonObject> JsonObject)
 {
 	FString ClassFullPathName = JsonObject->GetStringField(TEXT("ClassPtr"));
-	StaticLoadClass(ClassPtr, nullptr, *ClassFullPathName);
+	ClassPtr = StaticLoadClass(UWidget::StaticClass(), nullptr, *ClassFullPathName);
 	HeaderFilePath = JsonObject->GetStringField(TEXT("HeaderFilePath"));
 	SourceFilePath = JsonObject->GetStringField(TEXT("SourceFilePath"));
 }
