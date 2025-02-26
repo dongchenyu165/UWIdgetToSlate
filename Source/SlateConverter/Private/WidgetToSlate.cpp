@@ -61,14 +61,13 @@ void AppendSlateProperty(FString& InOutCodeStr, UWidget* InWidget)
 
 #include "Templates/Function.h"
 
+// Updated CompareNormalProperty with an additional callback parameter.
 bool CompareNormalProperty(FProperty* InProperty, void* ObjectA, void* ObjectB, int32 InDepth,
                            FUObjectCompareCallback OnDifferenceFound = [](FProperty*, void*, void*)
                            {
                            })
 {
 	FString Indent = FString::ChrN(InDepth * 2, TEXT(' '));
-	// UE_LOG(LogTemp, Display, TEXT("%sProperty '%s'"), *Indent, *InProperty->GetName());
-	
 	// 布尔型
 	if (FBoolProperty* BoolProperty = CastField<FBoolProperty>(InProperty))
 	{
@@ -154,18 +153,18 @@ bool CompareProperty(FProperty* InProperty, void* ObjectA, void* ObjectB, int32 
                      })
 {
 	FString Indent = FString::ChrN(InDepth * 2, TEXT(' '));
-	UE_LOG(LogTemp, Display, TEXT("%sProperty '%s'"), *Indent, *InProperty->GetName());
-	
 	// 对象引用
 	if (FObjectProperty* ObjectProperty = CastField<FObjectProperty>(InProperty))
 	{
 		UObject* ValueA = ObjectProperty->GetPropertyValue_InContainer(ObjectA);
 		UObject* ValueB = ObjectProperty->GetPropertyValue_InContainer(ObjectB);
 
+		// Invalid object pointer
 		if (!ValueA || !ValueB)
 		{
 			return ValueA == ValueB;  // Both are null, return true.
 		}
+		// Different object pointers
 		if (ValueA != ValueB)
 		{
 			if (CompareUObjects(ValueA, ValueB, InDepth + 1, OnDifferenceFound) == false)
@@ -217,14 +216,12 @@ bool CompareProperty(FProperty* InProperty, void* ObjectA, void* ObjectB, int32 
 			return false;
 		}
 
-		FProperty* p = ArrayProperty->Inner;
+		FProperty* InnerProperty = ArrayProperty->Inner;
 		for (int32 Index = 0; Index < NumA; ++Index)
 		{
-			// 获取当前元素的原始数据指针
 			void* ElementAPtr = ArrayHelperA.GetRawPtr(Index);
 			void* ElementBPtr = ArrayHelperB.GetRawPtr(Index);
-			// CompareUObjects(p, ObjectA, ObjectB, InDepth + 1);
-			CompareProperty(p, ElementAPtr, ElementBPtr, InDepth + 1);
+			CompareProperty(InnerProperty, ElementAPtr, ElementBPtr, InDepth + 1, OnDifferenceFound);
 		}
 	}
 	// 结构体
@@ -235,7 +232,6 @@ bool CompareProperty(FProperty* InProperty, void* ObjectA, void* ObjectB, int32 
 
 		if (StructA && StructB)
 		{
-			// 递归比较结构体字段
 			for (TFieldIterator<FProperty> StructFieldIt(StructProperty->Struct); StructFieldIt; ++StructFieldIt)
 			{
 				if (!CompareProperty(*StructFieldIt, StructA, StructB, InDepth + 1, OnDifferenceFound))
