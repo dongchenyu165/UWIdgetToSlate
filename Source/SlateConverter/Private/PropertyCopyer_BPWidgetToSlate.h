@@ -4,9 +4,12 @@
 
 class FPropertyMappingInfo
 {
+	constexpr static int INVALID_INDEX = -1;
+
 	// The property name of the UWidget object
 	FString WidgetPropertyStr;
-	UClass* WidgetClass = nullptr;
+
+	int SlateMemberIndex = INVALID_INDEX;
 
 	// The setter function name to set the property for Slate object
 	FString SlatePropSetterStr;
