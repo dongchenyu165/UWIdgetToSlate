@@ -25,8 +25,8 @@ public:
 class FPropertyCopyer_BPWidgetToSlate
 {
 public:
-	static void LoadWidgetToSlateMapping();
-	static void SaveWidgetToSlateMapping();
+	static void LoadWidgetToSlateMapping() {};
+	static void SaveWidgetToSlateMapping() {};
 
 	static void MakeMappingByScanSourceCode();
 
