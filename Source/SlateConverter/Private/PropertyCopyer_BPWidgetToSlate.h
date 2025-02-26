@@ -1,6 +1,7 @@
 #pragma once
 
 #include "CoreMinimal.h"
+#include "WidgetSourceScanner.h"
 #include "Components/Widget.h"
 
 class FPropertyMappingInfo
@@ -28,7 +29,12 @@ public:
 	static void LoadWidgetToSlateMapping() {};
 	static void SaveWidgetToSlateMapping() {};
 
+	static FPropertyMappingInfo& GetMappingInfo(UClass* InClass, const FString& InPropertyName);
+	static void BuildMapping(UClass* InClass);
+
 	static inline TMap<FString /* Widget Class Name */, TMap<FString /* UWidget prop */, FPropertyMappingInfo>> Mapping;
+	// Scanner for scanning the slate member in the UWidget source code.
+	static inline TMap<FString /* Widget Class Name */, FWidgetSourceScanner> ScannerMapping;
 	static inline FPropertyMappingInfo InvalidMappingInfo;
 
 	// The pattern to match the setter function in the Official UWidget source code.

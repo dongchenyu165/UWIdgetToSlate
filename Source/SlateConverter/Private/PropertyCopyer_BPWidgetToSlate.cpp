@@ -1,69 +1,130 @@
-﻿#include "PropertyCopyer_BPWidgetToSlate.h"
-
+#include "PropertyCopyer_BPWidgetToSlate.h"
+#include "ClassSourceSearcher.h"
 #include "Components/Widget.h"
 
 
-
-
-void FPropertyCopyer_BPWidgetToSlate::MakeMappingByScanSourceCode()
+FPropertyMappingInfo& FPropertyCopyer_BPWidgetToSlate::GetMappingInfo(UClass* InClass, const FString& InPropertyName)
 {
-	// TODO: Make BasePath configurable
-	FString BasePath = "F:/EpicGames/SelfCompiled_UE5/Engine/Source/Runtime/UMG";
-
-		TArray<UClass*> DerivedClasses;
-	GetDerivedClasses(UWidget::StaticClass(), DerivedClasses, true);
-	int i = 0;
-	for (auto It = DerivedClasses.CreateIterator(); It; ++It, ++i)
+	if (InClass == nullptr)
 	{
-		auto& ClassVar = *It;
+		UE_LOG(LogTemp, Log, TEXT("Invalid UClass pointer."));
+		return InvalidMappingInfo;
+	}
+	if (!InClass->IsChildOf(UWidget::StaticClass()))
+	{
+		UE_LOG(LogTemp, Log, TEXT("The class is not a child of UWidget."));
+		return InvalidMappingInfo;
+	}
+	auto* p = &Mapping;
+	FString ClassName = InClass->GetName();
 
-		FString ClassHeaderPath;
-		FString ClassSourcePath;
-		bool bHasSourceFile = GetUClassSourceFiles(ClassVar, ClassHeaderPath, ClassSourcePath);
-
-		FString FileContent;
-		FFileHelper::LoadFileToString(FileContent, *ClassSourcePath);
-		if (FileContent.IsEmpty())
+	if (!Mapping.Contains(InClass->GetName()))
+	{
+		UClass* BuildingClassPtr = InClass;
+		while (true)
 		{
-			UE_LOG(LogTemp, Display, TEXT("NO CPP FILE!! ;; Module: %s ;; Module path: %s ;; HEADER: %s"),
-			       *ClassVar->GetName(), *ClassHeaderPath, *ClassHeaderPath);
-			continue;
+			if (!BuildingClassPtr)
+			{
+				break;
+			}
+			if (Mapping.Contains(BuildingClassPtr->GetName()))
+			{
+				BuildingClassPtr = BuildingClassPtr->GetSuperClass();
+				continue;
+			}
+
+			BuildMapping(BuildingClassPtr);
+
+			if (BuildingClassPtr == UWidget::StaticClass())
+			{
+				break;
+			}
+
+			BuildingClassPtr = BuildingClassPtr->GetSuperClass();
 		}
+	}
+	if (!Mapping.Contains(InClass->GetName()))
+	{
+		UE_LOG(LogTemp, Log, TEXT("The class '%s' is not in the mapping."), *InClass->GetName());
+		return InvalidMappingInfo;
+	}
 
-		// FRegexPattern Pattern(TEXT(R"((My\w*)->(Set[\w,\d,_]*)\()"));
-		const FRegexPattern Pattern(TEXT(R"((My\w*)->(Set[\w,\d,_]*)\(([\w,\d,_]*)\))"));
-		FRegexMatcher Matcher(Pattern, FileContent);
-		Matcher.SetLimits(0, FileContent.Len());
-
-		while (Matcher.FindNext())
+	auto FindPropertyInMapping = [&InPropertyName](UClass* ClassPtr) -> FPropertyMappingInfo*
+	{
+		while (ClassPtr)
 		{
-			FString SlateWidgetVarName = Matcher.GetCaptureGroup(1);
-			FString SlateAttrSetterFuncName = Matcher.GetCaptureGroup(2);
-			TArray<FString> UWidgetParameterStringList;
-			FString UWidgetParametersString = Matcher.GetCaptureGroup(3).Replace(TEXT(" "), TEXT(""));
-			UWidgetParametersString.ParseIntoArray(UWidgetParameterStringList, TEXT(","));
+			if (Mapping[ClassPtr->GetName()].Contains(InPropertyName))
+			{
+				return &Mapping[ClassPtr->GetName()][InPropertyName];
+			}
 
-			if (UWidgetParameterStringList.Num() > 1)
+			if (ClassPtr == UWidget::StaticClass())
 			{
-				UE_LOG(LogTemp, Display, TEXT(" -=-=-=- Module: %s ;; SlateVar: %s ;; SlateSetter: %s ;; Params: %s"),
-				       *ClassVar->GetName(), *SlateWidgetVarName, *SlateAttrSetterFuncName, *UWidgetParametersString);
+				break;
 			}
-			else if (UWidgetParameterStringList.Num() == 1)
-			{
-				UE_LOG(LogTemp, Display, TEXT(" +++1+++ Module: %s ;; SlateVar: %s ;; SlateSetter: %s ;; Params: %s"),
-				       *ClassVar->GetName(), *SlateWidgetVarName, *SlateAttrSetterFuncName, *UWidgetParametersString);
-			}
-			else
-			{
-				UE_LOG(LogTemp, Display,
-				       TEXT(" +++ELSE+++ Module: %s ;; SlateVar: %s ;; SlateSetter: %s ;; Params: %s"),
-				       *ClassVar->GetName(), *SlateWidgetVarName, *SlateAttrSetterFuncName, *UWidgetParametersString);
-			}
+			ClassPtr = ClassPtr->GetSuperClass();
 		}
+		return nullptr;
+	};
 
-		if (i > 5)
+	FPropertyMappingInfo* FoundMappingInfo = FindPropertyInMapping(InClass);
+	if (FoundMappingInfo)
+	{
+		return *FoundMappingInfo;
+	}
+
+	BuildMapping(InClass);
+
+	FoundMappingInfo = FindPropertyInMapping(InClass);
+	if (FoundMappingInfo)
+	{
+		return *FoundMappingInfo;
+	}
+	Mapping[InClass->GetName()].Add(InPropertyName, FPropertyMappingInfo());
+
+	UE_LOG(LogTemp, Log, TEXT("The property '%s' is not in the mapping of class '%s'."), *InPropertyName, *InClass->GetName());
+	return Mapping[InClass->GetName()][InPropertyName];
+}
+void FPropertyCopyer_BPWidgetToSlate::BuildMapping(UClass* InClass)
+{
+	// InClass->GetSuperClass();
+	// Find source code file path
+	FString ClassHeaderPath, ClassSourcePath;
+	FClassSourceSearcher::FindUClassSourceFiles(InClass, ClassHeaderPath, ClassSourcePath);
+
+	// Load source code file content.
+	FString FileContent;
+	FFileHelper::LoadFileToString(FileContent, *ClassSourcePath);
+	if (FileContent.IsEmpty())
+	{
+		UE_LOG(LogTemp, Display, TEXT("NO CPP FILE!! ;; Module: %s ;; Module path: %s ;; HEADER: %s"),
+			   *InClass->GetName(), *ClassHeaderPath, *ClassHeaderPath);
+		return;
+	}
+
+	// Create scanner for the UWidget class
+	if (!ScannerMapping.Contains(InClass->GetName()))
+	{
+		ScannerMapping.Add(InClass->GetName(), FWidgetSourceScanner(ClassHeaderPath));
+	}
+	FWidgetSourceScanner& Scanner = ScannerMapping[InClass->GetName()];
+	Scanner.MatchingSlateMember(InClass->GetName());
+
+	if (!Mapping.Contains(InClass->GetName()))
+	{
+		Mapping.Add(InClass->GetName(), TMap<FString, FPropertyMappingInfo>());
+	}
+	if (InClass == UWidget::StaticClass())
+	{
+		MatchingUWidgetSlateSetter(InClass, FileContent);
+	}
+	else
+	{
+		for (int i = 0; i < Scanner.GetMatchedSlateMemberInfoList().Num(); ++i)
 		{
-			break;
+			const FSlateMemberInfo& SlateMemberInfo = Scanner.GetMatchedSlateMemberInfoList()[i];
+
+			MatchingAllSlateSetter(InClass, FileContent, SlateMemberInfo, i);
 		}
 	}
 }
