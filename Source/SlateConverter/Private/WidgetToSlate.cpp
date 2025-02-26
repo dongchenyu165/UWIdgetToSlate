@@ -6,8 +6,137 @@
 #include "Components/TextBlock.h"
 
 
-FString WidgetToSlateStr(UWidget* InRootWidget)
+FString ConvertFSlateRenderTransformToCpp(const FSlateRenderTransform& Transform)
 {
+	if (Transform.IsIdentity())
+	{
+		return TEXT("TOptional<FSlateRenderTransform>()");
+	}
+
+	// 解析 Transform 内部的 Matrix
+	using Mat3 = decltype(Transform.To3DMatrix());
+	const Mat3& Matrix = Transform.To3DMatrix();
+
+	// 生成 C++ 初始化代码
+	return FString::Printf(
+		TEXT("FSlateRenderTransform{{%ff, %ff, %ff, %ff}, {%ff, %ff}};"),
+		Matrix.M[0][0], Matrix.M[1][1],  // Scale
+		Matrix.M[0][1], Matrix.M[1][0],  // Shear
+		Matrix.M[2][0], Matrix.M[2][1]   // Translation
+	);
+}
+
+FString ConvertStructPropertyToCppCode(FStructProperty* StructProperty, void* StructData)
+{
+	if (!StructProperty || !StructData)
+	{
+		return TEXT("InvalidStruct");
+	}
+
+	UScriptStruct* StructType = StructProperty->Struct;
+	if (!StructType)
+	{
+		return TEXT("InvalidStruct");
+	}
+
+	// 处理 UMG 相关的结构体
+	if (StructType == TBaseStructure<FVector2D>::Get())
+	{
+		FVector2D* Vec = static_cast<FVector2D*>(StructData);
+		return FString::Printf(TEXT("FVector2D(%f, %f)"), Vec->X, Vec->Y);
+	}
+	else if (StructType == TBaseStructure<FMargin>::Get())
+	{
+		FMargin* Margin = static_cast<FMargin*>(StructData);
+		return FString::Printf(TEXT("FMargin(%f, %f, %f, %f)"), Margin->Left, Margin->Top, Margin->Right,
+		                       Margin->Bottom);
+	}
+	else if (StructType == TBaseStructure<FLinearColor>::Get())
+	{
+		FLinearColor* Color = static_cast<FLinearColor*>(StructData);
+		return FString::Printf(TEXT("FLinearColor(%f, %f, %f, %f)"), Color->R, Color->G, Color->B, Color->A);
+	}
+	else if (StructType == TBaseStructure<FSlateColor>::Get())
+	{
+		FSlateColor* SlateColor = static_cast<FSlateColor*>(StructData);
+		FLinearColor Color = SlateColor->GetSpecifiedColor();
+		return FString::Printf(TEXT("FSlateColor(FLinearColor(%f, %f, %f, %f))"), Color.R, Color.G, Color.B, Color.A);
+	}
+	// FSlateBrush（用于 UI 贴图）
+	else if (StructType == TBaseStructure<FSlateBrush>::Get())
+	{
+		FSlateBrush* Brush = static_cast<FSlateBrush*>(StructData);
+
+		// 提取关键字段，例如图片路径
+		if (Brush->GetResourceObject())
+		{
+			return FString::Printf(TEXT("FSlateBrush(%s)"), *Brush->GetResourceObject()->GetName());
+		}
+		else
+		{
+			return TEXT("FSlateBrush()");
+		}
+	}
+	else if (StructType == TBaseStructure<FSlateFontInfo>::Get())
+	{
+		FSlateFontInfo* FontInfo = static_cast<FSlateFontInfo*>(StructData);
+
+		// 仅提取字体名称 & 大小
+		return FString::Printf(TEXT("FSlateFontInfo(TEXT(\"%s\"), %d)"),
+		                       *FontInfo->TypefaceFontName.ToString(),
+		                       FontInfo->Size);
+	}
+	else if (StructType == TBaseStructure<FWidgetTransform>::Get())
+	{
+		FWidgetTransform* Transform = static_cast<FWidgetTransform*>(StructData);
+		return ConvertFSlateRenderTransformToCpp(Transform->ToSlateRenderTransform());
+	}
+	else if (StructType == TBaseStructure<FAnchors>::Get())
+	{
+		FAnchors* Anchors = static_cast<FAnchors*>(StructData);
+		return FString::Printf(TEXT("FAnchors(%f, %f, %f, %f)"), Anchors->Minimum.X, Anchors->Minimum.Y,
+		                       Anchors->Maximum.X, Anchors->Maximum.Y);
+	}
+
+	return TEXT("UNSUPPORTED_STRUCT");
+}
+
+FString __MakeSetterSegment(FProperty* InProperty, UWidget* InPropertyContainerWidgetPtr, const TArray<FString>& InArgStrList)
+{
+	FString SetterArgsValueStr;
+	for (int i = 0; i < InArgStrList.Num(); ++i)
+	{
+		auto& ArgStr = InArgStrList[i];
+		if (InPropertyContainerWidgetPtr->StaticClass()->FindPropertyByName(FName(*ArgStr)) == nullptr)
+		{
+			UE_LOG(LogTemp, Warning, TEXT(" COMPARE--SetterArgsList--[%s]  Property not found: %s"),
+				   *ArgStr, *ArgStr);
+
+			SetterArgsValueStr.Append("INSERT_VALUE_MANUALLY, ");
+			continue;
+		}
+
+		FString ValueStr;
+		if (FStructProperty* StructProperty = CastField<FStructProperty>(InProperty))
+		{
+			// 获取该属性在 Widget 实例中的实际数据
+			void* StructData = StructProperty->ContainerPtrToValuePtr<void>(InPropertyContainerWidgetPtr);
+			ValueStr = ConvertStructPropertyToCppCode(StructProperty, StructData);
+		}
+		else
+		{
+			void* PropPtr = InProperty->ContainerPtrToValuePtr<void>(InPropertyContainerWidgetPtr);
+			InProperty->ExportText_Direct(ValueStr, PropPtr, nullptr, nullptr,
+										 EPropertyPortFlags::PPF_None);
+		}
+
+		SetterArgsValueStr.Append(ValueStr + ", ");
+	}
+	SetterArgsValueStr.RemoveFromEnd(", ");
+
+	return SetterArgsValueStr;
+}
+
 	FString Code;
 
 	if (!InRootWidget)
