@@ -1,10 +1,10 @@
-#pragma once
+﻿#pragma once
 #include "CoreMinimal.h"
 
 using FUObjectCompareCallback = TFunction<void(FProperty*, void*, void*)>;
 
 class UWidget;
-inline FString WidgetToSlateStr(UWidget* InRootWidget);
+inline FString WidgetToSlateStr(UWidget* InRootWidget, int InDepth = 0);
 // void CompareFPropertyValue(FProperty* InnerProp, void* ValueA, void* ValueB, int32 Depth);
 // void CompareStructProperties(UScriptStruct* Struct, void* StructA, void* StructB, int32 Depth);
 // void CompareUObjectProperties(UObject* ObjA, UObject* ObjB, int32 Depth = 0);
