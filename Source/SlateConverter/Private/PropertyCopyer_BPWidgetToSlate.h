@@ -1,4 +1,4 @@
-#pragma once
+﻿#pragma once
 
 #include "CoreMinimal.h"
 #include "WidgetSourceScanner.h"
@@ -30,6 +30,13 @@ public:
 	static void SaveWidgetToSlateMapping() {};
 
 	static FPropertyMappingInfo& GetMappingInfo(UClass* InClass, const FString& InPropertyName);
+	static void MatchingUWidgetSlateSetter(UClass* InClass, const FString& InFileContent);
+	static void MatchingAllSlateSetter(UClass* InClass, const FString& InFileContent,
+	                                   const FSlateMemberInfo& InSlateMemberInfo,
+	                                   const int& InMemberInfoIndex);
+	static void MatchSlateSetterByPattern(UClass* InClass, const FString& InFileContent, const FString& InPattern);
+
+
 	static void BuildMapping(UClass* InClass);
 
 	static inline TMap<FString /* Widget Class Name */, TMap<FString /* UWidget prop */, FPropertyMappingInfo>> Mapping;

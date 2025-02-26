@@ -1,4 +1,4 @@
-#include "PropertyCopyer_BPWidgetToSlate.h"
+﻿#include "PropertyCopyer_BPWidgetToSlate.h"
 #include "ClassSourceSearcher.h"
 #include "Components/Widget.h"
 
@@ -85,6 +85,66 @@ FPropertyMappingInfo& FPropertyCopyer_BPWidgetToSlate::GetMappingInfo(UClass* In
 	UE_LOG(LogTemp, Log, TEXT("The property '%s' is not in the mapping of class '%s'."), *InPropertyName, *InClass->GetName());
 	return Mapping[InClass->GetName()][InPropertyName];
 }
+
+void FPropertyCopyer_BPWidgetToSlate::MatchingUWidgetSlateSetter(UClass* InClass, const FString& InFileContent)
+{
+	FString Pattern_Full = TEXT(R"(()SafeWidget->Set(\w+)\(((?:[^()]+|\((?:[^()]+|\((?:[^()]+|\([^()]*\))*\))*\))*)\);)");
+	FString Pattern = TEXT(R"(()SafeWidget->Set([\w,\d,_]*)\(([\w,\d,_]*)\))");
+	MatchSlateSetterByPattern(InClass, InFileContent, Pattern);
+}
+
+void FPropertyCopyer_BPWidgetToSlate::MatchingAllSlateSetter(UClass* InClass, const FString& InFileContent,
+															 const FSlateMemberInfo& InSlateMemberInfo,
+															 const int& InMemberInfoIndex)
+{
+	// FString PatternText = FString::Printf(
+	// 	TEXT(R"((%s)(Set[\w,\d,_]*)\(([\w,\d,_]*)\))"), *(InSlateMemberInfo.MemberName + InSlateMemberInfo.AccessOp));
+
+	// Remove [Set] prefix in the setter function name when matching group 2.
+	// For example, [SetPadding] -> [Padding]
+	// This is because the [SNew]'s chain initialization use the property name without the [Set] prefix.
+	FString PatternText = FString::Printf(
+		TEXT(R"((%s)Set([\w,\d,_]*)\(([\w,\d,_]*)\))"), *(InSlateMemberInfo.MemberName + InSlateMemberInfo.AccessOp));
+	MatchSlateSetterByPattern(InClass, InFileContent, PatternText);
+	for (auto MapInfo : Mapping[InClass->GetName()])
+	{
+		MapInfo.Value.SlateMemberIndex = InMemberInfoIndex;
+	}
+}
+
+void FPropertyCopyer_BPWidgetToSlate::MatchSlateSetterByPattern(UClass* InClass, const FString& InFileContent,
+	const FString& InPattern)
+{
+	const FRegexPattern RegexPattern(InPattern);
+
+	FRegexMatcher Matcher(RegexPattern, InFileContent);
+	Matcher.SetLimits(0, InFileContent.Len());
+
+	while (Matcher.FindNext())
+	{
+		FString SlateAttrSetterFuncName = Matcher.GetCaptureGroup(2);
+		TArray<FString> ArgsList;
+		FString UWidgetParametersString = Matcher.GetCaptureGroup(3).Replace(TEXT(" "), TEXT(""));
+
+		{
+			
+		}
+		
+		UWidgetParametersString.ParseIntoArray(ArgsList, TEXT(","));
+
+		for (auto& UWidgetPropertyVarName : ArgsList)
+		{
+			FPropertyMappingInfo& MappingInfo = Mapping[InClass->GetName()].Add(
+				UWidgetPropertyVarName, FPropertyMappingInfo());
+			MappingInfo.WidgetClass = InClass;
+			MappingInfo.WidgetPropertyStr = UWidgetPropertyVarName;
+			MappingInfo.SlateMemberIndex = -1;
+			MappingInfo.SlatePropSetterStr = Matcher.GetCaptureGroup(2);
+			MappingInfo.SetterArgsStr = ArgsList;
+		}
+	}
+}
+
 void FPropertyCopyer_BPWidgetToSlate::BuildMapping(UClass* InClass)
 {
 	// InClass->GetSuperClass();
