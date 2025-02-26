@@ -1,4 +1,4 @@
-﻿#pragma once
+#pragma once
 
 #include "CoreMinimal.h"
 
@@ -11,6 +11,8 @@ class FPropertyMappingInfo
 	// The setter function name to set the property for Slate object
 	FString SlatePropSetterStr;
 
+	// The arguments of the setter function.
+	// Each element is a string of the UPROPERTY in the [WidgetClass], which input into the setter function.
 	TArray<FString> SetterArgsStr;
 };
 
