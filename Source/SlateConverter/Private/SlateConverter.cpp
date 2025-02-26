@@ -185,34 +185,8 @@ FString FSlateConverterModule::ConvertWidgetTreeToSlate(UWidgetTree* InWidgetTre
 	FString ClassHeaderPath, ClassSourcePath;
 	FClassSourceSearcher::FindUClassSourceFiles(InWidgetTree->RootWidget->GetClass(), ClassHeaderPath, ClassSourcePath);
 
-	// CompareUObjects(Cast<UStruct>(InWidgetTree->RootWidget.Get()), Cast<UStruct>(InWidgetTree->RootWidget->GetClass()->ClassDefaultObject.Get()));
-	// CompareUObjects(InWidgetTree->RootWidget, InWidgetTree->RootWidget->GetClass()->ClassDefaultObject);
-
-	// 遍历 WidgetTree，生成 Slate 代码
-	InWidgetTree->ForEachWidget(
-		[InWidgetTree](UWidget* InWidgetInTree)
-		{
-			if (!InWidgetInTree)
-			{
-				return;
-			}
-
-			// 生成 Slate 代码
-			UE_LOG(LogTemp, Display, TEXT("Function:[%hs] Widget name: [%s] Slate name: [%s]"), __FUNCTION__,
-			       *InWidgetInTree->GetName(), *InWidgetInTree->TakeWidget()->GetTypeAsString());
-			int Depth = 0;
-			TObjectPtr<UWidget> WidgetParent = InWidgetInTree->GetParent();
-			if (!WidgetParent)
-			{
-				return;
-			}
-			while (WidgetParent != InWidgetTree->RootWidget)
-			{
-				WidgetParent = WidgetParent->GetParent();
-				Depth++;
-			}
-		}
-	);
+	FString CodeStr = WidgetToSlateStr(InWidgetTree->RootWidget.Get());
+	UE_LOG(LogTemp, Log, TEXT("Slate Code: %s"), *CodeStr);
 
 	return SlateCode;
 }
