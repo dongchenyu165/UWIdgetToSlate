@@ -61,7 +61,7 @@ void AppendSlateProperty(FString& InOutCodeStr, UWidget* InWidget)
 
 #include "Templates/Function.h"
 
-void CompareNormalProperty(FProperty* InProperty, void* ObjectA, void* ObjectB, int32 InDepth)
+bool CompareNormalProperty(FProperty* InProperty, void* ObjectA, void* ObjectB, int32 InDepth,
                            FUObjectCompareCallback OnDifferenceFound = [](FProperty*, void*, void*)
                            {
                            })
@@ -81,6 +81,7 @@ void CompareNormalProperty(FProperty* InProperty, void* ObjectA, void* ObjectB, 
 			       *InProperty->GetName(), ValueA ? TEXT("true") : TEXT("false"),
 			       ValueB ? TEXT("true") : TEXT("false"));
 			OnDifferenceFound(InProperty, ObjectA, ObjectB);
+			return false;
 		}
 	}
 	// 整数型
@@ -98,6 +99,9 @@ void CompareNormalProperty(FProperty* InProperty, void* ObjectA, void* ObjectB, 
 			UE_LOG(LogTemp, Display, TEXT("NOEQUAL == Property '%s' differs: A = %s, B = %s"),
 			       *InProperty->GetName(), *ValueA, *ValueB);
 			OnDifferenceFound(InProperty, ObjectA, ObjectB);
+			return false;
+		}
+	}
 	// 字符串型
 	else if (FStrProperty* StringProperty = CastField<FStrProperty>(InProperty))
 	{
@@ -109,6 +113,7 @@ void CompareNormalProperty(FProperty* InProperty, void* ObjectA, void* ObjectB, 
 			UE_LOG(LogTemp, Display, TEXT("NOEQUAL == Property '%s' differs: A = %s, B = %s"),
 			       *InProperty->GetName(), *ValueA, *ValueB);
 			OnDifferenceFound(InProperty, ObjectA, ObjectB);
+			return false;
 		}
 	}
 	// 名称型
@@ -122,6 +127,7 @@ void CompareNormalProperty(FProperty* InProperty, void* ObjectA, void* ObjectB, 
 			UE_LOG(LogTemp, Display, TEXT("NOEQUAL == Property '%s' differs: A = %s, B = %s"),
 			       *InProperty->GetName(), *ValueA.ToString(), *ValueB.ToString());
 			OnDifferenceFound(InProperty, ObjectA, ObjectB);
+			return false;
 		}
 	}
 	// 文本型
@@ -135,10 +141,14 @@ void CompareNormalProperty(FProperty* InProperty, void* ObjectA, void* ObjectB, 
 			UE_LOG(LogTemp, Display, TEXT("NOEQUAL == Property '%s' differs: A = %s, B = %s"),
 			       *InProperty->GetName(), *ValueA.ToString(), *ValueB.ToString());
 			OnDifferenceFound(InProperty, ObjectA, ObjectB);
+			return false;
 		}
 	}
+
+	return true;
 }
 
+bool CompareProperty(FProperty* InProperty, void* ObjectA, void* ObjectB, int32 InDepth,
                      FUObjectCompareCallback OnDifferenceFound = [](FProperty*, void*, void*)
                      {
                      })
@@ -154,18 +164,21 @@ void CompareNormalProperty(FProperty* InProperty, void* ObjectA, void* ObjectB, 
 
 		if (!ValueA || !ValueB)
 		{
-			return;
+			return ValueA == ValueB;  // Both are null, return true.
 		}
 		if (ValueA != ValueB)
 		{
-			UE_LOG(LogTemp, Display, TEXT("NOEQUAL == Property '%s' differs: A = %s, B = %s"),
-			       *InProperty->GetName(),
-			       ValueA ? *ValueA->GetName() : TEXT("null"),
-			       ValueB ? *ValueB->GetName() : TEXT("null"));
-			OnDifferenceFound(InProperty, ObjectA, ObjectB);
+			if (CompareUObjects(ValueA, ValueB, InDepth + 1, OnDifferenceFound) == false)
+			{
+				UE_LOG(LogTemp, Display, TEXT("NOEQUAL == Property '%s' differs: A = %s, B = %s"),
+					  *InProperty->GetName(),
+					  ValueA ? *ValueA->GetName() : TEXT("null"),
+					  ValueB ? *ValueB->GetName() : TEXT("null"));
+				OnDifferenceFound(InProperty, ObjectA, ObjectB);
+				return false;
+			}
 		}
-		
-		CompareUObjects(ValueA, ValueB, InDepth + 1);
+		return true;
 	}
 	// 类引用
 	else if (FClassProperty* ClassProperty = CastField<FClassProperty>(InProperty))
@@ -175,7 +188,7 @@ void CompareNormalProperty(FProperty* InProperty, void* ObjectA, void* ObjectB, 
 
 		if (!ValueA || !ValueB)
 		{
-			return;
+			return ValueA == ValueB;  // Both are null, return true.
 		}
 		if (ValueA != ValueB)
 		{
@@ -184,6 +197,7 @@ void CompareNormalProperty(FProperty* InProperty, void* ObjectA, void* ObjectB, 
 			       ValueA ? *ValueA->GetName() : TEXT("null"),
 			       ValueB ? *ValueB->GetName() : TEXT("null"));
 			OnDifferenceFound(InProperty, ObjectA, ObjectB);
+			return false;
 		}
 	}
 	// 数组
@@ -200,7 +214,7 @@ void CompareNormalProperty(FProperty* InProperty, void* ObjectA, void* ObjectB, 
 			UE_LOG(LogTemp, Display, TEXT("NOEQUAL == Property '%s' differs in array size: A = %d, B = %d"),
 			       *InProperty->GetName(), NumA, NumB);
 			OnDifferenceFound(InProperty, ObjectA, ObjectB);
-			return;
+			return false;
 		}
 
 		FProperty* p = ArrayProperty->Inner;
@@ -224,34 +238,36 @@ void CompareNormalProperty(FProperty* InProperty, void* ObjectA, void* ObjectB, 
 			// 递归比较结构体字段
 			for (TFieldIterator<FProperty> StructFieldIt(StructProperty->Struct); StructFieldIt; ++StructFieldIt)
 			{
-				CompareProperty(*StructFieldIt, StructA, StructB, InDepth + 1);
+				if (!CompareProperty(*StructFieldIt, StructA, StructB, InDepth + 1, OnDifferenceFound))
+				{
+					return false;
+				}
 			}
 		}
 	}
 	else
 	{
-		CompareNormalProperty(InProperty, ObjectA, ObjectB, InDepth);
+		return CompareNormalProperty(InProperty, ObjectA, ObjectB, InDepth + 1, OnDifferenceFound);
 	}
+	return true;
 }
 
-void CompareUObjects(UObject* ObjectA, UObject* ObjectB, int InDepth,
+bool CompareUObjects(UObject* ObjectA, UObject* ObjectB, int InDepth,
                      FUObjectCompareCallback OnDifferenceFound)
 {
 	if (!ObjectA || !ObjectB || ObjectA->GetClass() != ObjectB->GetClass())
 	{
 		UE_LOG(LogTemp, Warning, TEXT("Objects are null or not of the same class."));
-		return;
+		return false;
 	}
 
 	UClass* ObjectClass = ObjectA->GetClass();
 	FString Indent = FString::ChrN(InDepth * 2, TEXT(' '));
-	// FString::
-
+	bool bResult = true;
 	for (TFieldIterator<FProperty> PropertyIt(ObjectClass); PropertyIt; ++PropertyIt)
 	{
 		FProperty* Property = *PropertyIt;
-		CompareProperty(Property, ObjectA, ObjectB, InDepth, OnDifferenceFound);
-	}
+	return bResult;
 }
 
 
