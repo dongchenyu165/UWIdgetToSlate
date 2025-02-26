@@ -86,15 +86,11 @@ bool CompareNormalProperty(FProperty* InProperty, void* ObjectA, void* ObjectB, 
 	// 整数型
 	else if (FNumericProperty* NumProperty = CastField<FNumericProperty>(InProperty))
 	{
-		FString ValueA = NumProperty->GetNumericPropertyValueToString(ObjectA);
-		FString ValueB = NumProperty->GetNumericPropertyValueToString(ObjectB);
-		// int32 ValueA = NumProperty->GetPropertyValue_InContainer(ObjectA);
-		// int32 ValueB = NumProperty->GetPropertyValue_InContainer(ObjectB);
+		FString ValueA = NumProperty->GetNumericPropertyValueToString(InProperty->ContainerPtrToValuePtr<void>(ObjectA));
+		FString ValueB = NumProperty->GetNumericPropertyValueToString(InProperty->ContainerPtrToValuePtr<void>(ObjectB));
 
 		if (ValueA != ValueB)
 		{
-			// UE_LOG(LogTemp, Display, TEXT("NOEQUAL == Property '%s' differs: A = %d, B = %d"),
-			// *InProperty->GetName(), ValueA, ValueB);
 			UE_LOG(LogTemp, Display, TEXT("NOEQUAL == Property '%s' differs: A = %s, B = %s"),
 			       *InProperty->GetName(), *ValueA, *ValueB);
 			OnDifferenceFound(InProperty, ObjectA, ObjectB);
