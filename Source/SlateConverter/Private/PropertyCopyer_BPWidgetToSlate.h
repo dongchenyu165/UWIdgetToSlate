@@ -1,11 +1,14 @@
 #pragma once
 
 #include "CoreMinimal.h"
+#include "Components/Widget.h"
 
 class FPropertyMappingInfo
 {
 	constexpr static int INVALID_INDEX = -1;
 
+public:
+	UClass* WidgetClass = nullptr;
 	// The property name of the UWidget object
 	FString WidgetPropertyStr;
 
