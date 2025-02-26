@@ -253,20 +253,39 @@ bool CompareProperty(FProperty* InProperty, void* ObjectA, void* ObjectB, int32 
 }
 
 bool CompareUObjects(UObject* ObjectA, UObject* ObjectB, int InDepth,
-                     FUObjectCompareCallback OnDifferenceFound)
+                     FUObjectCompareCallback OnDifferenceFound, bool bSubPropertyCallback)
 {
+	static FUObjectCompareCallback EmptyCallback = [](FProperty*, void*, void*) {};
 	if (!ObjectA || !ObjectB || ObjectA->GetClass() != ObjectB->GetClass())
 	{
 		UE_LOG(LogTemp, Warning, TEXT("Objects are null or not of the same class."));
 		return false;
 	}
+	if (!bSubPropertyCallback)
+	{
+		OnDifferenceFound = EmptyCallback;
+	}
 
 	UClass* ObjectClass = ObjectA->GetClass();
 	FString Indent = FString::ChrN(InDepth * 2, TEXT(' '));
+	
+	UE_LOG(LogTemp, Display, TEXT(" ======= %s ======== >>>>>>>>>>>>>>>>"), *ObjectClass->GetName());
+
 	bool bResult = true;
 	for (TFieldIterator<FProperty> PropertyIt(ObjectClass); PropertyIt; ++PropertyIt)
 	{
 		FProperty* Property = *PropertyIt;
+		bool bPropertyEqu = CompareProperty(Property, ObjectA, ObjectB, InDepth, EmptyCallback);
+		bResult = bResult && bPropertyEqu;  // If any property is different, [bResult] set to false.
+		UE_LOG(LogTemp, Display, TEXT("%s Iterate Property [%s]"), *Indent, *Property->GetName());
+		
+		if (!bPropertyEqu)
+		{
+			OnDifferenceFound(Property, ObjectA, ObjectB);
+		}
+	}
+	UE_LOG(LogTemp, Display, TEXT(" -------- %s -------- <<<<<<<<<<<<<<<<<"), *ObjectClass->GetName());
+
 	return bResult;
 }
 

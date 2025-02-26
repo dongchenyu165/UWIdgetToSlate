@@ -11,5 +11,5 @@ inline FString WidgetToSlateStr(UWidget* InRootWidget);
 bool CompareUObjects(UObject* ObjectA, UObject* ObjectB, int InDepth = 0,
                      FUObjectCompareCallback Callback = [](FProperty*, void*, void*)
                      {
-                     });
+                     }, bool bSubPropertyCallback = false);
 // void CompareUObjects(UStruct* ObjectA, UStruct* ObjectB, int InDepth = 0);
