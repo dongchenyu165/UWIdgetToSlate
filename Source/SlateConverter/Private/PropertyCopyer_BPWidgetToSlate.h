@@ -28,7 +28,9 @@ public:
 	static void LoadWidgetToSlateMapping() {};
 	static void SaveWidgetToSlateMapping() {};
 
-	static void MakeMappingByScanSourceCode();
+	static inline TMap<FString /* Widget Class Name */, TMap<FString /* UWidget prop */, FPropertyMappingInfo>> Mapping;
+	static inline FPropertyMappingInfo InvalidMappingInfo;
 
-	static TMap<FString /* Widget Class Name */, TMap<FString /* Widget prop */, FPropertyMappingInfo>> Mapping;
+	// The pattern to match the setter function in the Official UWidget source code.
+	constexpr static const TCHAR* DefaultSetterMatchPattern = TEXT(R"((My\w*)->(Set[\w,\d,_]*)\(([\w,\d,_]*)\))");
 };
