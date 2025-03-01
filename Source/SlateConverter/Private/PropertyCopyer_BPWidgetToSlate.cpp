@@ -3,6 +3,52 @@
 #include "Components/Widget.h"
 
 
+/**
+ * 将 InString 根据多个分隔符进行分割，结果存入 OutArray 中
+ *
+ * @param InString   待分割的字符串
+ * @param Delimiters 分隔符集合，每个字符都作为一个分隔符
+ * @param OutArray   分割后得到的字符串数组
+ */
+void SplitStringByMultipleDelimiters(const FString& InString, const FString& Delimiters, TArray<FString>& OutArray)
+{
+	OutArray.Empty();
+
+	const int32 StringLength = InString.Len();
+	int32 StartIndex = 0;
+
+	for (int32 i = 0; i < StringLength; i++)
+	{
+		bool bIsDelimiter = false;
+		// 检查当前字符是否为分隔符之一
+		for (int32 j = 0; j < Delimiters.Len(); j++)
+		{
+			if (InString[i] == Delimiters[j])
+			{
+				bIsDelimiter = true;
+				break;
+			}
+		}
+
+		if (bIsDelimiter)
+		{
+			// 若存在非空子串则添加到数组中
+			if (i > StartIndex)
+			{
+				OutArray.Add(InString.Mid(StartIndex, i - StartIndex));
+			}
+			// 更新起始索引至下一个字符
+			StartIndex = i + 1;
+		}
+	}
+
+	// 添加最后一段（如果不为空）
+	if (StartIndex < StringLength)
+	{
+		OutArray.Add(InString.Mid(StartIndex));
+	}
+}
+
 FPropertyMappingInfo& FPropertyCopyer_BPWidgetToSlate::GetMappingInfo(UClass* InClass, const FString& InPropertyName)
 {
 	if (InClass == nullptr)
@@ -88,9 +134,58 @@ FPropertyMappingInfo& FPropertyCopyer_BPWidgetToSlate::GetMappingInfo(UClass* In
 
 void FPropertyCopyer_BPWidgetToSlate::MatchingUWidgetSlateSetter(UClass* InClass, const FString& InFileContent)
 {
+	// $2: Setter function name, $3: Setter function arguments
 	FString Pattern_Full = TEXT(R"(()SafeWidget->Set(\w+)\(((?:[^()]+|\((?:[^()]+|\((?:[^()]+|\([^()]*\))*\))*\))*)\);)");
-	FString Pattern = TEXT(R"(()SafeWidget->Set([\w,\d,_]*)\(([\w,\d,_]*)\))");
-	MatchSlateSetterByPattern(InClass, InFileContent, Pattern);
+
+	const FRegexPattern RegexPattern(Pattern_Full);
+
+	FRegexMatcher Matcher(RegexPattern, InFileContent);
+	Matcher.SetLimits(0, InFileContent.Len());
+
+	TMap<FString, TArray<FString>> PropertyNameToArgsStrList;
+
+	while (Matcher.FindNext())
+	{
+		FString SlateAttrSetterFuncName = Matcher.GetCaptureGroup(2);
+		TArray<FString> ArgsList;
+		FString UWidgetParametersString = Matcher.GetCaptureGroup(3).Replace(TEXT(" "), TEXT(""));
+
+		SplitStringByMultipleDelimiters(UWidgetParametersString, TEXT(".<>(), "), ArgsList);
+		for (auto SymbolStr : ArgsList)
+		{
+			if (InClass->FindPropertyByName(FName(*SymbolStr)))
+			{
+				FPropertyMappingInfo& MappingInfo = Mapping[InClass->GetName()].Add(
+					SymbolStr, FPropertyMappingInfo());
+				MappingInfo.WidgetClass = InClass;
+				// MappingInfo.WidgetPropertyStr = SymbolStr;
+				// MappingInfo.SlateMemberIndex = -1;
+				MappingInfo.SlatePropSetterStr = SlateAttrSetterFuncName;
+				MappingInfo.SetterArgsStr = {SymbolStr};
+			}
+		}
+
+		
+		// UWidgetParametersString.ParseIntoArray(ArgsList, TEXT("<>(), "));
+		// PropertyNameToArgsStrList.Add(SlateAttrSetterFuncName.Replace(TEXT("Set"), TEXT("")), ArgsList);
+
+		
+		// UWidgetParametersString.ParseIntoArray(ArgsList, TEXT(","));
+
+		// for (auto& UWidgetPropertyVarName : ArgsList)
+		// {
+		// 	FPropertyMappingInfo& MappingInfo = Mapping[InClass->GetName()].Add(
+		// 		UWidgetPropertyVarName, FPropertyMappingInfo());
+		// 	MappingInfo.WidgetClass = InClass;
+		// 	MappingInfo.WidgetPropertyStr = UWidgetPropertyVarName;
+		// 	MappingInfo.SlateMemberIndex = -1;
+		// 	MappingInfo.SlatePropSetterStr = Matcher.GetCaptureGroup(2);
+		// 	MappingInfo.SetterArgsStr = ArgsList;
+		// }
+	}
+	
+	// FString Pattern = TEXT(R"(()SafeWidget->Set([\w,\d,_]*)\(([\w,\d,_]*)\))");
+	// MatchSlateSetterByPattern(InClass, InFileContent, Pattern_Full);
 }
 
 void FPropertyCopyer_BPWidgetToSlate::MatchingAllSlateSetter(UClass* InClass, const FString& InFileContent,
