@@ -3,6 +3,7 @@
 #include "SlateConverter.h"
 
 #include "ClassSourceSearcher.h"
+#include "PropertyCopyer_BPWidgetToSlate.h"
 #include "SlateConverterStyle.h"
 #include "SlateConverterCommands.h"
 #include "Misc/MessageDialog.h"
@@ -17,6 +18,7 @@
 #include "WidgetToSlate.h"
 
 #include "Blueprint/WidgetTree.h"
+#include "Widgets/Layout/SConstraintCanvas.h"
 // #include "Misc/Paths.h"
 
 
@@ -180,6 +182,8 @@ FString FSlateConverterModule::ConvertWidgetTreeToSlate(UWidgetTree* InWidgetTre
 	{
 		return SlateCode;
 	}
+
+	FPropertyCopyer_BPWidgetToSlate::Mapping.Empty();
 
 	FString ClassModuleName = FClassSourceSearcher::GetUClassModuleName(InWidgetTree->RootWidget->GetClass());
 	FString ClassHeaderPath, ClassSourcePath;
