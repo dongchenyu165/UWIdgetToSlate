@@ -1,4 +1,4 @@
-﻿#include "WidgetToSlate.h"
+#include "WidgetToSlate.h"
 
 #include "PropertyCopyer_BPWidgetToSlate.h"
 #include "Components/Button.h"
@@ -20,7 +20,7 @@ FString ConvertFSlateRenderTransformToCpp(const FSlateRenderTransform& Transform
 
 	// 生成 C++ 初始化代码
 	return FString::Printf(
-		TEXT("FSlateRenderTransform{{%ff, %ff, %ff, %ff}, {%ff, %ff}};"),
+		TEXT("FSlateRenderTransform{{%ff, %ff, %ff, %ff}, {%ff, %ff}}"),
 		Matrix.M[0][0], Matrix.M[1][1],  // Scale
 		Matrix.M[0][1], Matrix.M[1][0],  // Shear
 		Matrix.M[2][0], Matrix.M[2][1]   // Translation
