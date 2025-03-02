@@ -304,8 +304,7 @@ FString WidgetToSlateStr(UWidget* InRootWidget, int InDepth)
 			Code += IndentStr + TEXT("[\n");
 			UWidget* Child = Panel->GetChildAt(i);
 			Code += WidgetToSlateStr(Child, InDepth + 1);
-			// Code += TEXT("\n") + IndentStr + TEXT("],\n");
-			Code += IndentStr + TEXT("],\n");
+			Code += IndentStr + TEXT("]\n");
 		}
 	}
 
