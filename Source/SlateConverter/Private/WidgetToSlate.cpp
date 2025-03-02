@@ -281,6 +281,9 @@ FString WidgetToSlateStr(UWidget* InRootWidget, int InDepth)
 		                // a->GetNumericPropertyValueToString(InObjValue);
 		                // FString ValueStr;
 		                // InnerProp->ExportText_Direct(ValueStr, InObjValue, InObjValue, nullptr, EPropertyPortFlags::PPF_None);
+		                FString SetterArgsValueStr = __MakeSetterSegment(
+			                InnerProp, InRootWidget, MappingInfo.SetterArgsStr);
+
 		                FString SetterSegmentStr = IndentStr + FString::Printf(
 			                TEXT(".%s(%s)"), *MappingInfo.SlatePropSetterStr, *SetterArgsValueStr);
 		                DiffPropertySetterStrList.Add(SetterSegmentStr);
