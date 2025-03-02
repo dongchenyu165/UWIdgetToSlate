@@ -27,6 +27,49 @@ FString ConvertFSlateRenderTransformToCpp(const FSlateRenderTransform& Transform
 	);
 }
 
+FString GetEnumPropertyValueAsString(const FProperty* InProperty, const void* InContainer, bool bOutputFullEnumNames = true)
+{
+	// 优先处理 FEnumProperty 类型（适用于 UENUM 声明的枚举，内部有一个数值属性）
+	if (const FEnumProperty* EnumProp = CastField<FEnumProperty>(InProperty))
+	{
+		// 获取枚举底层的数值属性（通常为 FNumericProperty）
+		if (const FNumericProperty* UnderlyingProp = EnumProp->GetUnderlyingProperty())
+		{
+			// 从容器中读取枚举值
+			const int64 EnumValue = UnderlyingProp->GetSignedIntPropertyValue(InContainer);
+			if (UEnum* Enum = EnumProp->GetEnum())
+			{
+				if (bOutputFullEnumNames)
+				{
+					return Enum->GetName() + "::" + Enum->GetNameByIndex(EnumValue).ToString();
+				}
+				else
+				{
+					return Enum->GetNameStringByValue(EnumValue);
+				}
+			}
+		}
+	}
+	// 如果 FProperty 实际上是 FByteProperty 类型，并且关联了 UEnum，则也是枚举
+	else if (const FByteProperty* ByteProp = CastField<FByteProperty>(InProperty))
+	{
+		if (ByteProp->Enum)
+		{
+			const uint8 EnumValue = ByteProp->GetPropertyValue_InContainer(InContainer);
+			if (bOutputFullEnumNames)
+			{
+				return ByteProp->Enum->GetName() + "::" + ByteProp->Enum->GetNameStringByValue(EnumValue);
+			}
+			else
+			{
+				return ByteProp->Enum->GetNameStringByValue(EnumValue);
+			}
+		}
+	}
+    
+	return FString("Invalid Enum Property");
+}
+
 FString ConvertStructPropertyToCppCode(FStructProperty* StructProperty, void* StructData)
 {
 	if (!StructProperty || !StructData)
