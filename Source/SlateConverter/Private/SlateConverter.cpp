@@ -18,6 +18,7 @@
 #include "WidgetToSlate.h"
 
 #include "Blueprint/WidgetTree.h"
+#include "Widgets/Input/SSlider.h"
 #include "Widgets/Layout/SConstraintCanvas.h"
 // #include "Misc/Paths.h"
 
