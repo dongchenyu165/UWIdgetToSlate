@@ -2,6 +2,7 @@
 
 #include "PropertyCopyer_BPWidgetToSlate.h"
 #include "Components/Button.h"
+#include "Components/CanvasPanelSlot.h" // For FAnchorData
 #include "Components/Overlay.h"
 #include "Components/PanelWidget.h"
 #include "Components/TextBlock.h"
@@ -295,9 +296,8 @@ FString WidgetToSlateStr(UWidget* InRootWidget, int InDepth)
 					                                             EPropertyPortFlags::PPF_None);
 				                }
 
-				                SlotAttrSetterStrList.Add(
-					                FString::Printf(TEXT(".%s(%s);"), *InnerProp->GetName(), *ValueStr));
-				                // SlotAttrSetterStrList.
+				                Code += FString::Printf(
+					                TEXT("%s.%s(%s)\n"), *IndentStr, *InnerProp->GetName(), *ValueStr);
 			                }, true);
 
 
