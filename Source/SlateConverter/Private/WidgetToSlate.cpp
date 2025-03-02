@@ -1,4 +1,4 @@
-#include "WidgetToSlate.h"
+﻿#include "WidgetToSlate.h"
 
 #include "PropertyCopyer_BPWidgetToSlate.h"
 #include "Components/Button.h"
@@ -134,6 +134,20 @@ FString ConvertStructPropertyToCppCode(FStructProperty* StructProperty, void* St
 		return FString::Printf(TEXT("FAnchors(%f, %f, %f, %f)"), Anchors->Minimum.X, Anchors->Minimum.Y,
 		                       Anchors->Maximum.X, Anchors->Maximum.Y);
 	}
+	if (StructType == TBaseStructure<FSlateChildSize>::Get())
+	{
+		FSlateChildSize* ChildSize = static_cast<FSlateChildSize*>(StructData);
+
+		// Handle ESlateSizeRule enum type.
+		FString EnumName = "ESlateSizeRule::Automatic";
+		if (UEnum* EnumPtr = StaticEnum<ESlateSizeRule::Type>())
+		{
+			auto* PropertyPtr = ChildSize->StaticStruct()->FindPropertyByName("SizeRule");
+			EnumName = GetEnumPropertyValueAsString(PropertyPtr, StructData);
+		}
+
+		return FString::Printf(TEXT("FSlateChildSize(%f, %s)"), ChildSize->Value, *EnumName);
+	}
 
 	return TEXT("UNSUPPORTED_STRUCT");
 }
@@ -259,27 +273,63 @@ FString WidgetToSlateStr(UWidget* InRootWidget, int InDepth)
 		// Panel->TakeWidget()->GetChildren()->;
 		// Code += FString::Printf(TEXT("SNew(STextBlock)"));
 		bool bIsContentWidget = Cast<UContentWidget>(Panel) != nullptr;
-		FString AddingSlotStr = bIsContentWidget ? TEXT("") : IndentStr + "+ " + WidgetSlateName + "::Slot()\n";;
+		FString AddingSlotStr = bIsContentWidget ? TEXT("") : IndentStr + "+ " + WidgetSlateName + "::Slot()\n";
 		for (int32 i = 0; i < Panel->GetChildrenCount(); ++i)
 		{
 			// Panel->GetSlotClass();
 			// Panel->GetSlots()[0]->
-			Code += AddingSlotStr;  // Indent is added at above.
+			Code += AddingSlotStr; // Indent is added at above.
 
 
 			TArray<FString> SlotAttrSetterStrList;
 			UPanelSlot* SlotObj = Panel->GetSlots()[i];
-			CompareUObjects(Panel->GetSlots()[i], Panel->GetSlotClass()->ClassDefaultObject, 0,
-			                [WidgetClass, SlotObj, &SlotAttrSetterStrList](
+			UPanelSlot* SlotCDO = Panel->GetSlotClass()->GetDefaultObject<UPanelSlot>();
+			UClass* SlotClass = SlotObj->GetClass();
+			CompareUObjects(SlotObj, SlotCDO, 0,
+			                [SlotClass, SlotObj, &SlotAttrSetterStrList, &IndentStr, &Code](
 			                FProperty* InnerProp, void* InObjValue, void* InCDO_Value)
 			                {
-				                if (!WidgetClass->HasProperty(InnerProp))
+				                if (!SlotClass->HasProperty(InnerProp))
 				                {
 					                return;
 				                }
 				                // None editor editable property, exit.
 				                if (!InnerProp->HasAnyPropertyFlags(CPF_Edit))
 				                {
+					                return;
+				                }
+
+				                FString PropertyName = InnerProp->GetName();
+				                if (PropertyName == "LayoutData")
+				                {
+					                FString Str;
+					                FAnchorData* InputData = InnerProp->ContainerPtrToValuePtr<FAnchorData>(InObjValue);
+					                FAnchorData* CDO_Data = InnerProp->ContainerPtrToValuePtr<FAnchorData>(InCDO_Value);
+					                if (InputData->Anchors != CDO_Data->Anchors)
+					                {
+						                Str += FString::Printf(TEXT("%s.Anchors(FAnchors{%f, %f, %f, %f})\n"),
+						                                       *IndentStr,
+						                                       InputData->Anchors.Minimum.X,
+						                                       InputData->Anchors.Minimum.Y,
+						                                       InputData->Anchors.Maximum.X,
+						                                       InputData->Anchors.Maximum.Y);
+					                }
+					                if (InputData->Alignment != CDO_Data->Alignment)
+					                {
+						                Str += FString::Printf(TEXT("%s.Alignment(FVector2D{%f, %f})\n"),
+						                                       *IndentStr,
+						                                       InputData->Alignment.X, InputData->Alignment.Y);
+					                }
+					                if (InputData->Offsets != CDO_Data->Offsets)
+					                {
+						                Str += FString::Printf(TEXT("%s.Offset(FMargin{%f, %f, %f, %f})\n"),
+						                                       *IndentStr,
+						                                       InputData->Offsets.Left, InputData->Offsets.Top,
+						                                       InputData->Offsets.Right, InputData->Offsets.Bottom);
+					                }
+
+					                SlotAttrSetterStrList.Add(Str);
+					                Code += Str;
 					                return;
 				                }
 
@@ -290,16 +340,27 @@ FString WidgetToSlateStr(UWidget* InRootWidget, int InDepth)
 					                void* StructData = StructProperty->ContainerPtrToValuePtr<void>(SlotObj);
 					                ValueStr = ConvertStructPropertyToCppCode(StructProperty, StructData);
 				                }
+				                else if (FByteProperty* ByteProp = CastField<FByteProperty>(InnerProp))
+				                {
+					                if (ByteProp->Enum) // 或者使用 ByteProp->GetEnum()，取决于具体版本
+					                {
+						                ValueStr = GetEnumPropertyValueAsString(ByteProp, InObjValue);
+					                }
+					                else
+					                {
+						                InnerProp->ExportText_Direct(ValueStr, InObjValue, InObjValue, nullptr,
+						                                             PPF_None);
+					                }
+				                }
 				                else
 				                {
 					                InnerProp->ExportText_Direct(ValueStr, InObjValue, InObjValue, nullptr,
-					                                             EPropertyPortFlags::PPF_None);
+					                                             PPF_None);
 				                }
 
 				                Code += FString::Printf(
 					                TEXT("%s.%s(%s)\n"), *IndentStr, *InnerProp->GetName(), *ValueStr);
 			                }, true);
-
 
 			Code += IndentStr + TEXT("[\n");
 			UWidget* Child = Panel->GetChildAt(i);
