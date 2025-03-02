@@ -84,25 +84,25 @@ FString ConvertStructPropertyToCppCode(FStructProperty* StructProperty, void* St
 		FVector2D* Vec = static_cast<FVector2D*>(StructData);
 		return FString::Printf(TEXT("FVector2D(%f, %f)"), Vec->X, Vec->Y);
 	}
-	else if (StructType == TBaseStructure<FMargin>::Get())
+	if (StructType == TBaseStructure<FMargin>::Get())
 	{
 		FMargin* Margin = static_cast<FMargin*>(StructData);
 		return FString::Printf(TEXT("FMargin(%f, %f, %f, %f)"), Margin->Left, Margin->Top, Margin->Right,
 		                       Margin->Bottom);
 	}
-	else if (StructType == TBaseStructure<FLinearColor>::Get())
+	if (StructType == TBaseStructure<FLinearColor>::Get())
 	{
 		FLinearColor* Color = static_cast<FLinearColor*>(StructData);
 		return FString::Printf(TEXT("FLinearColor(%f, %f, %f, %f)"), Color->R, Color->G, Color->B, Color->A);
 	}
-	else if (StructType == TBaseStructure<FSlateColor>::Get())
+	if (StructType == TBaseStructure<FSlateColor>::Get())
 	{
 		FSlateColor* SlateColor = static_cast<FSlateColor*>(StructData);
 		FLinearColor Color = SlateColor->GetSpecifiedColor();
 		return FString::Printf(TEXT("FSlateColor(FLinearColor(%f, %f, %f, %f))"), Color.R, Color.G, Color.B, Color.A);
 	}
 	// FSlateBrush（用于 UI 贴图）
-	else if (StructType == TBaseStructure<FSlateBrush>::Get())
+	if (StructType == TBaseStructure<FSlateBrush>::Get())
 	{
 		FSlateBrush* Brush = static_cast<FSlateBrush*>(StructData);
 
@@ -111,12 +111,9 @@ FString ConvertStructPropertyToCppCode(FStructProperty* StructProperty, void* St
 		{
 			return FString::Printf(TEXT("FSlateBrush(%s)"), *Brush->GetResourceObject()->GetName());
 		}
-		else
-		{
-			return TEXT("FSlateBrush()");
-		}
+		return TEXT("FSlateBrush()");
 	}
-	else if (StructType == TBaseStructure<FSlateFontInfo>::Get())
+	if (StructType == TBaseStructure<FSlateFontInfo>::Get())
 	{
 		FSlateFontInfo* FontInfo = static_cast<FSlateFontInfo*>(StructData);
 
@@ -125,12 +122,12 @@ FString ConvertStructPropertyToCppCode(FStructProperty* StructProperty, void* St
 		                       *FontInfo->TypefaceFontName.ToString(),
 		                       FontInfo->Size);
 	}
-	else if (StructType == TBaseStructure<FWidgetTransform>::Get())
+	if (StructType == TBaseStructure<FWidgetTransform>::Get())
 	{
 		FWidgetTransform* Transform = static_cast<FWidgetTransform*>(StructData);
 		return ConvertFSlateRenderTransformToCpp(Transform->ToSlateRenderTransform());
 	}
-	else if (StructType == TBaseStructure<FAnchors>::Get())
+	if (StructType == TBaseStructure<FAnchors>::Get())
 	{
 		FAnchors* Anchors = static_cast<FAnchors*>(StructData);
 		return FString::Printf(TEXT("FAnchors(%f, %f, %f, %f)"), Anchors->Minimum.X, Anchors->Minimum.Y,
