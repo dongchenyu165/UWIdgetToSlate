@@ -21,13 +21,14 @@ FString ConvertFSlateRenderTransformToCpp(const FSlateRenderTransform& Transform
 	// 生成 C++ 初始化代码
 	return FString::Printf(
 		TEXT("FSlateRenderTransform{{%ff, %ff, %ff, %ff}, {%ff, %ff}}"),
-		Matrix.M[0][0], Matrix.M[1][1],  // Scale
-		Matrix.M[0][1], Matrix.M[1][0],  // Shear
-		Matrix.M[2][0], Matrix.M[2][1]   // Translation
+		Matrix.M[0][0], Matrix.M[1][1], // Scale
+		Matrix.M[0][1], Matrix.M[1][0], // Shear
+		Matrix.M[2][0], Matrix.M[2][1] // Translation
 	);
 }
 
-FString GetEnumPropertyValueAsString(const FProperty* InProperty, const void* InContainer, bool bOutputFullEnumNames = true)
+FString GetEnumPropertyValueAsString(const FProperty* InProperty, const void* InContainer,
+                                     bool bOutputFullEnumNames = true)
 {
 	// 优先处理 FEnumProperty 类型（适用于 UENUM 声明的枚举，内部有一个数值属性）
 	if (const FEnumProperty* EnumProp = CastField<FEnumProperty>(InProperty))
@@ -43,10 +44,7 @@ FString GetEnumPropertyValueAsString(const FProperty* InProperty, const void* In
 				{
 					return Enum->GetName() + "::" + Enum->GetNameByIndex(EnumValue).ToString();
 				}
-				else
-				{
-					return Enum->GetNameStringByValue(EnumValue);
-				}
+				return Enum->GetNameStringByValue(EnumValue);
 			}
 		}
 	}
@@ -60,13 +58,10 @@ FString GetEnumPropertyValueAsString(const FProperty* InProperty, const void* In
 			{
 				return ByteProp->Enum->GetName() + "::" + ByteProp->Enum->GetNameStringByValue(EnumValue);
 			}
-			else
-			{
-				return ByteProp->Enum->GetNameStringByValue(EnumValue);
-			}
+			return ByteProp->Enum->GetNameStringByValue(EnumValue);
 		}
 	}
-    
+
 	return FString("Invalid Enum Property");
 }
 
@@ -145,7 +140,8 @@ FString ConvertStructPropertyToCppCode(FStructProperty* StructProperty, void* St
 	return TEXT("UNSUPPORTED_STRUCT");
 }
 
-FString __MakeSetterSegment(FProperty* InProperty, UWidget* InPropertyContainerWidgetPtr, const TArray<FString>& InArgStrList)
+FString __MakeSetterSegment(FProperty* InProperty, UWidget* InPropertyContainerWidgetPtr,
+                            const TArray<FString>& InArgStrList)
 {
 	FString SetterArgsValueStr;
 	for (int i = 0; i < InArgStrList.Num(); ++i)
@@ -154,7 +150,7 @@ FString __MakeSetterSegment(FProperty* InProperty, UWidget* InPropertyContainerW
 		if (InPropertyContainerWidgetPtr->StaticClass()->FindPropertyByName(FName(*ArgStr)) == nullptr)
 		{
 			UE_LOG(LogTemp, Warning, TEXT(" COMPARE--SetterArgsList--[%s]  Property not found: %s"),
-				   *ArgStr, *ArgStr);
+			       *ArgStr, *ArgStr);
 
 			SetterArgsValueStr.Append("INSERT_VALUE_MANUALLY, ");
 			continue;
@@ -171,7 +167,7 @@ FString __MakeSetterSegment(FProperty* InProperty, UWidget* InPropertyContainerW
 		{
 			void* PropPtr = InProperty->ContainerPtrToValuePtr<void>(InPropertyContainerWidgetPtr);
 			InProperty->ExportText_Direct(ValueStr, PropPtr, nullptr, nullptr,
-										 EPropertyPortFlags::PPF_None);
+			                              PPF_None);
 		}
 
 		SetterArgsValueStr.Append(ValueStr + ", ");
@@ -193,12 +189,12 @@ FString WidgetToSlateStr(UWidget* InRootWidget, int InDepth)
 	{
 		IndentStr += DefaultIndentStr;
 	}
-	
+
 	if (!InRootWidget)
 	{
 		return "";
 	}
-	
+
 	auto SlateWidgetRef = InRootWidget->TakeWidget();
 	FString WidgetSlateName = SlateWidgetRef->GetTypeAsString();
 	// UClass* WidgetClass = UWidget::StaticClass();
@@ -228,10 +224,10 @@ FString WidgetToSlateStr(UWidget* InRootWidget, int InDepth)
 			                UE_LOG(LogTemp, Log, TEXT("属性 %s 不可在编辑器中编辑"), *InnerProp->GetName());
 			                return;
 		                }
-	                	
+
 		                if (auto OwnedClass = InnerProp->GetOwnerClass())
 		                {
-							UE_LOG(LogTemp, Display, TEXT("InnerProp->GetOwnerClass(): [%s]"), *OwnedClass->GetName());
+			                UE_LOG(LogTemp, Display, TEXT("InnerProp->GetOwnerClass(): [%s]"), *OwnedClass->GetName());
 		                }
 		                //
 		                FPropertyMappingInfo& MappingInfo = FPropertyCopyer_BPWidgetToSlate::GetMappingInfo(
@@ -412,8 +408,10 @@ bool CompareNormalProperty(FProperty* InProperty, void* ObjectA, void* ObjectB, 
 	// 整数型
 	else if (FNumericProperty* NumProperty = CastField<FNumericProperty>(InProperty))
 	{
-		FString ValueA = NumProperty->GetNumericPropertyValueToString(InProperty->ContainerPtrToValuePtr<void>(ObjectA));
-		FString ValueB = NumProperty->GetNumericPropertyValueToString(InProperty->ContainerPtrToValuePtr<void>(ObjectB));
+		FString ValueA = NumProperty->
+			GetNumericPropertyValueToString(InProperty->ContainerPtrToValuePtr<void>(ObjectA));
+		FString ValueB = NumProperty->
+			GetNumericPropertyValueToString(InProperty->ContainerPtrToValuePtr<void>(ObjectB));
 
 		if (ValueA != ValueB)
 		{
@@ -484,7 +482,7 @@ bool CompareProperty(FProperty* InProperty, void* ObjectA, void* ObjectB, int32 
 		// Invalid object pointer
 		if (!ValueA || !ValueB)
 		{
-			return ValueA == ValueB;  // Both are null, return true.
+			return ValueA == ValueB; // Both are null, return true.
 		}
 		// Different object pointers
 		if (ValueA != ValueB)
@@ -492,9 +490,9 @@ bool CompareProperty(FProperty* InProperty, void* ObjectA, void* ObjectB, int32 
 			if (CompareUObjects(ValueA, ValueB, InDepth + 1, OnDifferenceFound) == false)
 			{
 				UE_LOG(LogTemp, Display, TEXT("NOEQUAL == Property '%s' differs: A = %s, B = %s"),
-					  *InProperty->GetName(),
-					  ValueA ? *ValueA->GetName() : TEXT("null"),
-					  ValueB ? *ValueB->GetName() : TEXT("null"));
+				       *InProperty->GetName(),
+				       ValueA ? *ValueA->GetName() : TEXT("null"),
+				       ValueB ? *ValueB->GetName() : TEXT("null"));
 				OnDifferenceFound(InProperty, ObjectA, ObjectB);
 				return false;
 			}
@@ -502,14 +500,14 @@ bool CompareProperty(FProperty* InProperty, void* ObjectA, void* ObjectB, int32 
 		return true;
 	}
 	// 类引用
-	else if (FClassProperty* ClassProperty = CastField<FClassProperty>(InProperty))
+	if (FClassProperty* ClassProperty = CastField<FClassProperty>(InProperty))
 	{
 		UClass* ValueA = static_cast<UClass*>(ClassProperty->GetPropertyValue_InContainer(ObjectA));
 		UClass* ValueB = static_cast<UClass*>(ClassProperty->GetPropertyValue_InContainer(ObjectB));
 
 		if (!ValueA || !ValueB)
 		{
-			return ValueA == ValueB;  // Both are null, return true.
+			return ValueA == ValueB; // Both are null, return true.
 		}
 		if (ValueA != ValueB)
 		{
@@ -573,7 +571,9 @@ bool CompareProperty(FProperty* InProperty, void* ObjectA, void* ObjectB, int32 
 bool CompareUObjects(UObject* ObjectA, UObject* ObjectB, int InDepth,
                      FUObjectCompareCallback OnDifferenceFound, bool bSubPropertyCallback)
 {
-	static FUObjectCompareCallback EmptyCallback = [](FProperty*, void*, void*) {};
+	static FUObjectCompareCallback EmptyCallback = [](FProperty*, void*, void*)
+	{
+	};
 	if (!ObjectA || !ObjectB || ObjectA->GetClass() != ObjectB->GetClass())
 	{
 		UE_LOG(LogTemp, Warning, TEXT("Objects are null or not of the same class."));
@@ -586,7 +586,7 @@ bool CompareUObjects(UObject* ObjectA, UObject* ObjectB, int InDepth,
 
 	UClass* ObjectClass = ObjectA->GetClass();
 	FString Indent = FString::ChrN(InDepth * 2, TEXT(' '));
-	
+
 	UE_LOG(LogTemp, Display, TEXT(" ======= %s ======== >>>>>>>>>>>>>>>>"), *ObjectClass->GetName());
 
 	bool bResult = true;
@@ -594,9 +594,9 @@ bool CompareUObjects(UObject* ObjectA, UObject* ObjectB, int InDepth,
 	{
 		FProperty* Property = *PropertyIt;
 		bool bPropertyEqu = CompareProperty(Property, ObjectA, ObjectB, InDepth, EmptyCallback);
-		bResult = bResult && bPropertyEqu;  // If any property is different, [bResult] set to false.
+		bResult = bResult && bPropertyEqu; // If any property is different, [bResult] set to false.
 		UE_LOG(LogTemp, Display, TEXT("%s Iterate Property [%s]"), *Indent, *Property->GetName());
-		
+
 		if (!bPropertyEqu)
 		{
 			OnDifferenceFound(Property, ObjectA, ObjectB);
