@@ -234,87 +234,22 @@ FString WidgetToSlateStr(UWidget* InRootWidget, int InDepth)
 		                {
 			                return;
 		                }
-	                	
-	                	
-	                	if (MappingInfo.SlatePropSetterStr.Contains("RenderOpacity"))
-	                	{
-							UE_LOG(LogTemp, Display, TEXT("HIT [RenderOpacity]"));
-	                	}
-	                	
-		                FString SetterArgsValueStr = __MakeSetterSegment(InnerProp, InRootWidget, MappingInfo.SetterArgsStr);
-	                	
-		                // FString SetterArgsValueStr;
-		                // for (int i = 0; i < MappingInfo.SetterArgsStr.Num(); ++i)
-		                // {
-			               //  auto& ArgStr = MappingInfo.SetterArgsStr[i];
-			               //  if (WidgetClass->FindPropertyByName(FName(*ArgStr)) == nullptr)
-			               //  {
-				              //   UE_LOG(LogTemp, Warning, TEXT(" COMPARE--SetterArgsList--[%s]  Property not found: %s"),
-				              //          *ArgStr, *ArgStr);
-		                //
-				              //   SetterArgsValueStr.Append("INSERT_VALUE_MANUALLY, ");
-				              //   continue;
-			               //  }
-		                //
-			               //  FString ValueStr;
-			               //  if (FStructProperty* StructProperty = CastField<FStructProperty>(InnerProp))
-			               //  {
-				              //   // 获取该属性在 Widget 实例中的实际数据
-				              //   void* StructData = StructProperty->ContainerPtrToValuePtr<void>(InRootWidget);
-				              //   ValueStr = ConvertStructPropertyToCppCode(StructProperty, StructData);
-			               //  }
-			               //  else
-			               //  {
-				              //   void* PropPtr = InnerProp->ContainerPtrToValuePtr<void>(InRootWidget);
-				              //   InnerProp->ExportText_Direct(ValueStr, PropPtr, nullptr, nullptr,
-				              //                                EPropertyPortFlags::PPF_None);
-			               //  }
-		                //
-			               //  SetterArgsValueStr.Append(ValueStr + ", ");
-		                // }
-		                // SetterArgsValueStr.RemoveFromEnd(", ");
-
-
-		                // InnerProp->GetOwnerClass();
-		                // InnerProp;
-		                // auto a = dynamic_cast<FNumericProperty*>(InnerProp);
-		                // a->GetNumericPropertyValueToString(InObjValue);
-		                // FString ValueStr;
-		                // InnerProp->ExportText_Direct(ValueStr, InObjValue, InObjValue, nullptr, EPropertyPortFlags::PPF_None);
-		                FString SetterArgsValueStr = __MakeSetterSegment(
+		                
+						FString SetterArgsValueStr = __MakeSetterSegment(
 			                InnerProp, InRootWidget, MappingInfo.SetterArgsStr);
 
 		                FString SetterSegmentStr = IndentStr + FString::Printf(
 			                TEXT(".%s(%s)"), *MappingInfo.SlatePropSetterStr, *SetterArgsValueStr);
 		                DiffPropertySetterStrList.Add(SetterSegmentStr);
-		                // auto& MemberInfo = FPropertyCopyer_BPWidgetToSlate::ScannerMapping[InnerProp->GetOwnerClass()->GetName()].GetMatchedSlateMemberInfoList()[MappingInfo.SlateMemberIndex];
-		                // MemberInfo.SlateTypeStr;
 	                }, true);
 
 	if (DiffPropertySetterStrList.Num() > 0)
 	{
-		Code += FString::Join(DiffPropertySetterStrList, TEXT("\n"));  // Indent is added at in each attr setter.
+		Code += FString::Join(DiffPropertySetterStrList, TEXT("\n")); // Indent is added at in each attr setter.
 		Code += TEXT("\n");
 	}
 
-	// if (InRootWidget->IsA(UButton::StaticClass()))
-	// {
-	// 	UButton* Button = Cast<UButton>(InRootWidget);
-	// 	Button->GetContent();
-	// 	Code += TEXT("SNew(SButton)\n");
-	// }
-	// else if (InRootWidget->IsA(UTextBlock::StaticClass()))
-	// {
-	// 	UTextBlock* TextBlock = Cast<UTextBlock>(InRootWidget);
-	//
-	// 	FString TextValue = (TextBlock && TextBlock->GetText().IsEmpty() == false)
-	// 							? TextBlock->GetText().ToString()
-	// 							: TEXT("Default Text");
-	// 	Code += FString::Printf(TEXT("SNew(STextBlock)\n	.Text(FText::FromString(TEXT(\"%s\")))\n"), *TextValue);
-	// }
-	// 其它控件的转换逻辑...
-
-	return Code;
+	// return Code;
 	// 如果控件有子控件，需要递归处理
 	if (UPanelWidget* Panel = Cast<UPanelWidget>(InRootWidget))
 	{
